@@ -13,6 +13,7 @@ CC=clang
 CFLAGS=
 LINK_FLAGS=
 
+MAKE_FLAGS=--no-print-directory
 
 all: directories program
 
@@ -21,10 +22,10 @@ all: directories program
 directories: $(BUILD_PATH)
 
 $(BUILD_PATH):
-	mkdir $(BUILD_PATH)
+	@mkdir $(BUILD_PATH)
 
 program:
-	make -C src
+	@make $(MAKE_FLAGS) -C src
 
 clean:
-	rm -rf $(BUILD_PATH)
+	@rm -rf $(BUILD_PATH)

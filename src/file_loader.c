@@ -49,9 +49,11 @@ FILE_HANDLE* load_file(const char* filename, void* base_address) {
 	FILE_HANDLE *file_handle = malloc(sizeof(*file_handle));
 	assert(strlen(filename) < sizeof(file_handle->file_path) && "file name too long to fit in header");
 	strcpy(file_handle->file_path, filename);
+	file_handle->fd = fd;
 	file_handle->image_base_address = base_address;
 	file_handle->image_size = file_size;
 	file_handle->file_headers = base_address;
+	
 	if(validate_headers(file_handle->file_headers))
 		INFO_LOG("File headers correctly verified\n");
 	else {
@@ -59,7 +61,13 @@ FILE_HANDLE* load_file(const char* filename, void* base_address) {
 		free(file_handle);
 		return NULL;
 	}
-	
+	if (file_handle->file_headers->flags_6 & FILE_HEADERS_TRAINER_EXISTS){
+		file_handle->start_of_prg = base_address + SIZE_OF_HEADERS + SIZE_OF_TRAINER;	
+	}else{
+		file_handle->start_of_prg = base_address + SIZE_OF_HEADERS;
+	}
+	file_handle->size_of_prg = (size_t)file_handle->file_headers->prg_rom_size * 0x4000;
+	INFO_LOG("Size of game code is %zu bytes\n", file_handle->size_of_prg);
 	return file_handle;
 }
 
