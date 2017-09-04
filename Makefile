@@ -1,12 +1,30 @@
+export
 
-all: build_dirs
+
+BASE_DIR:=$(shell pwd)
+SRC_DIR=$(BASE_DIR)/src
+INCLUDE_PATH=$(BASE_DIR)/include
+BUILD_PATH:=$(BASE_DIR)/build
+HEADERS:=$(wildcard $(BASE_DIR)/include/*.h)
+TARGET=$(BUILD_PATH)/emu-nes.out
 
 
-.PHONY: build_dirs
+CC=clang
+CFLAGS=
+LINK_FLAGS=
 
-build_dirs:
-	@mkdir -p build
 
+all: directories program
+
+.PHONY: directories
+
+directories: $(BUILD_PATH)
+
+$(BUILD_PATH):
+	mkdir $(BUILD_PATH)
+
+program:
+	make -C src
 
 clean:
-	@rm -rf build/
+	rm -rf $(BUILD_PATH)

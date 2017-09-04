@@ -1,1 +1,1 @@
-A toy emulator for the SNES.
+A toy emulator for the NES.
