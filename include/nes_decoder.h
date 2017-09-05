@@ -1,5 +1,5 @@
-#ifndef NES_DECODER
-#define NES_DECODER
+#ifndef NES_DECODER_H
+#define NES_DECODER_H
 #include <stdlib.h>
 
 typedef enum {
