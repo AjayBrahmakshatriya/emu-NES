@@ -1,6 +1,7 @@
 #ifndef NES_DECODER_H
 #define NES_DECODER_H
 #include <stdlib.h>
+#include "file_loader.h"
 
 typedef enum {
 	AM_A,
@@ -53,9 +54,11 @@ typedef struct {
 } NES_INSTRUCTION;
 
 extern NES_INSTRUCTION nes_instructions[256];
+extern int *BB_END_OPCODES;
+extern int BB_END_OPCODES_COUNT;
 
 const NES_INSTRUCTION* decode_address(void* address);
-void decode_and_print_from(void *address, size_t to_print, void* base_address);
+void decode_and_print_from(FILE_HANDLE *file_handle, void *address, size_t to_print);
 
 #endif
 

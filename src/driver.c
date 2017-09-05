@@ -7,6 +7,7 @@
 
 
 #define IMAGE_BASE (void*) 0x300000000ULL
+#define ADDRESS_SPACE_START (void*) 0x400000000ULL
 
 
 
@@ -19,8 +20,17 @@ int main(int argc, char *argv[]) {
 	FILE_HANDLE *file_handle = load_file(argv[1], IMAGE_BASE);
 	if(file_handle == NULL)
 		return -1;
-	decode_and_print_from(file_handle->start_of_prg, file_handle->size_of_prg, file_handle->start_of_prg);
+	if(map_file(file_handle, ADDRESS_SPACE_START) == 0) {
+		INFO_LOG("File mapping completed at address = %p\n", file_handle->address_space_start);
+	}else{
+		close_file(file_handle);
+		return -1;
+	}
+	void *execution_start_address = identify_reset_address(file_handle);
+	INFO_LOG("Execution to start at %p\n", execution_start_address);
+	decode_and_print_from(file_handle, execution_start_address, -1);
+	unmap_file(file_handle);	
 	close_file(file_handle);
-
+	
 	return 0;
 }

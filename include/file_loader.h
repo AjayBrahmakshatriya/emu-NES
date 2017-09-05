@@ -32,10 +32,16 @@ typedef struct {
 	FILE_HEADERS* file_headers;
 	void *start_of_prg;
 	size_t size_of_prg;
+	void* address_space_start;
 } FILE_HANDLE, *PFILE_HANDLE;
 
 
 FILE_HANDLE* load_file(const char* filename, void* base_address);
 void close_file(FILE_HANDLE *file_handle);
+int map_file(FILE_HANDLE *file_handle, void *address_space_start);
+int unmap_file(FILE_HANDLE *file_handle);
+void* identify_reset_address(FILE_HANDLE *file_handle);
+void* translate_address_to_emulation_context(FILE_HANDLE *file_handle, unsigned short address);
+
 #endif
 
