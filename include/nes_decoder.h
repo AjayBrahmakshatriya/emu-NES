@@ -57,7 +57,7 @@ extern NES_INSTRUCTION nes_instructions[256];
 extern int *BB_END_OPCODES;
 extern int BB_END_OPCODES_COUNT;
 
-const NES_INSTRUCTION* decode_address(void* address);
+const NES_INSTRUCTION* decode_address(void* address, int* opcode, int* arguments, int* size);
 void decode_and_print_from(FILE_HANDLE *file_handle, void *address, size_t to_print);
 
 #endif

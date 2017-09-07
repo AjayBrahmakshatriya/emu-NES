@@ -1,9 +1,24 @@
 #include "nes_decoder.h"
 #include "log_messages.h"
 
-const NES_INSTRUCTION* decode_address(void *address){
-	int opcode = (int)*(unsigned char*)address;
-	return &nes_instructions[opcode];
+const NES_INSTRUCTION* decode_address(void *address, int* opcode, int* argument, int *size){
+	int decoded_opcode = (int)*(unsigned char*)address;
+	*opcode = decoded_opcode;
+	*size = AM_sizes[nes_instructions[decoded_opcode].addressing_mode];
+	*argument = 0;
+	switch(*size) {
+		case 1:
+			break;
+		case 2:	
+			*argument += ((unsigned char*)address)[1];
+			break;
+		case 3:
+			*argument += ((unsigned char*)address)[1] + ((int)(((unsigned char*)address)[2])<<8);
+			break;
+		default:
+			ERROR_LOG("Invalid size for decoding = %d\n", *size);
+	}
+	return &nes_instructions[decoded_opcode];
 }
 
 int is_bb_end_opcode(int opcode){
@@ -22,17 +37,18 @@ void decode_and_print_from(FILE_HANDLE *file_handle, void *address, size_t to_pr
 	void* base_address = file_handle->address_space_start;
 	const NES_INSTRUCTION *decoded_instruction = NULL;
 	while(printed < to_print) {
-		decoded_instruction = decode_address(address);
+		int opcode;
+		int size;
+		int argument;
+		decoded_instruction = decode_address(address, &opcode, &argument, &size);
 		NES_ADDRESSING_MODE am = decoded_instruction->addressing_mode;
-		int opcode = *(unsigned char*) address;
-
 		if (decoded_instruction->name == NULL) {
 			ERROR_LOG("Invalid instruction(%x) at %p\n", opcode, address);
 			return;
 		}
-		printf("%8x: %s %s\n", (int)(address-base_address), decoded_instruction->name, AM_names[am]); 
-		address += AM_sizes[am];
-		printed += AM_sizes[am]; 
+		printf("%08x: %s %s %04x\n", (int)(address-base_address), decoded_instruction->name, AM_names[am], argument); 
+		address += size;
+		printed += size;
 		if(is_bb_end_opcode(opcode))
 			break;
 	}

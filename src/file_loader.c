@@ -81,7 +81,7 @@ int map_file(FILE_HANDLE *file_handle, void *address_space_start){
 	if(file_handle == NULL)
 		return -1;
 
-	if(address_space_start != mmap(address_space_start, 0xFFFF, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)){
+	if(address_space_start != mmap(address_space_start, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)){
 		ERROR_LOG("Address space creation failed for %s\n", file_handle->file_path);
 		return -1;
 	}
