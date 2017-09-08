@@ -6,6 +6,7 @@
 	.globl NES_INSTRUCTION_0x00
 NES_INSTRUCTION_0x00:
 	nop
+	movq	$__arg_00_0, %rax
 
 	.globl NES_INSTRUCTION_0x01
 NES_INSTRUCTION_0x01:

@@ -1,7 +1,7 @@
 #include "file_loader.h"
 #include "log_messages.h"
 #include "nes_decoder.h"
-
+#include "instruction_database.h"
 
 #include <stdlib.h>
 
@@ -12,8 +12,8 @@
 
 
 int main(int argc, char *argv[]) {
-	if(argc < 2) {
-		ERROR_LOG("Insufficient arguments, please call as %s <nes-rom-filename>\n", argv[0]);
+	if(argc < 3) {
+		ERROR_LOG("Insufficient arguments, please call as %s <nes-rom-filename> <instruction-database>\n", argv[0]);
 		return -1;
 	}
 	INFO_LOG("File name = %s\n", argv[1]);
@@ -28,7 +28,10 @@ int main(int argc, char *argv[]) {
 	}
 	void *execution_start_address = identify_reset_address(file_handle);
 	INFO_LOG("Execution to start at %p\n", execution_start_address);
+	INSTRUCTION_DATABASE *instruction_database = create_database(argv[2]);
+	
 	decode_and_print_from(file_handle, execution_start_address, -1);
+	
 	unmap_file(file_handle);	
 	close_file(file_handle);
 	

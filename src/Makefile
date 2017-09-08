@@ -1,4 +1,4 @@
-all: $(TARGET)
+all: $(TARGET) $(BUILD_PATH)/translation.o
 
 
 SOURCES:=$(wildcard *.c)
@@ -12,4 +12,5 @@ $(TARGET): $(OBJECTS)
 	$(CC) $^ $(LINK_FLAGS) -o $@
 
 
-
+$(BUILD_PATH)/translation.o: x86_64_translations.s
+	$(CC) --target=x86_64-pc-win32 -m64 -c $< -o $@ 
