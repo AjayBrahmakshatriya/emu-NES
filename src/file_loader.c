@@ -122,12 +122,14 @@ void close_file(FILE_HANDLE* file_handle) {
 	return;
 }
 
-
-
-void* identify_reset_address(FILE_HANDLE *file_handle) {
+unsigned long long identify_reset_address_emulation(FILE_HANDLE *file_handle){
 	unsigned char *reset_address_location = translate_address_to_emulation_context(file_handle, 0xFFFC);
 	unsigned short address = (unsigned short)reset_address_location[0] | ((unsigned short)reset_address_location[1] << 8);
-	return translate_address_to_emulation_context(file_handle, address);
+	return address;
+}
+
+void* identify_reset_address(FILE_HANDLE *file_handle) {
+	return translate_address_to_emulation_context(file_handle, identify_reset_address_emulation(file_handle));
 }
 
 void* translate_address_to_emulation_context(FILE_HANDLE *file_handle, unsigned short address) {

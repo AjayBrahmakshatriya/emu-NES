@@ -41,6 +41,8 @@ void close_file(FILE_HANDLE *file_handle);
 int map_file(FILE_HANDLE *file_handle, void *address_space_start);
 int unmap_file(FILE_HANDLE *file_handle);
 void* identify_reset_address(FILE_HANDLE *file_handle);
+unsigned long long identify_reset_address_emulation(FILE_HANDLE *file_handle);
+
 void* translate_address_to_emulation_context(FILE_HANDLE *file_handle, unsigned short address);
 
 #endif

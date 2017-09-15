@@ -19,5 +19,6 @@ typedef struct {
 
 INSTRUCTION_DATABASE* create_database(char* filename);
 int destroy_database(INSTRUCTION_DATABASE *instruction_database);
+void *find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opcode);
 
 #endif

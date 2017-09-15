@@ -5,10 +5,16 @@
 #include <stdlib.h>
 
 
+
+typedef struct {
+	void* address_map[256];
+}ADDRESS_MAP;
+
 typedef struct {
 	void* base_address;
 	void* top_address;
 	void* commit_address;
+	ADDRESS_MAP *address_map;
 }EXECUTION_AREA;
 
 

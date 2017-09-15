@@ -104,3 +104,9 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 	}
 	return instruction_database;
 }
+
+
+void* find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opcode) {
+	return instruction_database->instruction_translation_start[opcode];
+}
+

@@ -14,6 +14,14 @@ EXECUTION_AREA* create_execution_area(void* base_address){
 	execution_area->base_address = base_address;
 	execution_area->top_address = base_address;
 	execution_area->commit_address = base_address;
+	execution_area->address_map = malloc(sizeof *(execution_area->address_map));
+	if (execution_area->address_map == NULL) {
+		ERROR_LOG("Address map creation failed\n");
+		return NULL;	
+	}
+	int i;
+	for (i = 0; i< 256; i++)
+		execution_area->address_map->address_map[i] = NULL;
 	return execution_area;
 }
 
