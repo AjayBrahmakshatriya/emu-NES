@@ -12,6 +12,8 @@ typedef struct {
 	int symbol_count;
 	char* string_table_address;
 	char* text_section_address;
+	char* text_relocation_address;
+	int text_relocation_count;
 	
 } INSTRUCTION_DATABASE;
 
@@ -20,5 +22,6 @@ typedef struct {
 INSTRUCTION_DATABASE* create_database(char* filename);
 int destroy_database(INSTRUCTION_DATABASE *instruction_database);
 void *find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opcode);
+long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opcode, int arg);
 
 #endif

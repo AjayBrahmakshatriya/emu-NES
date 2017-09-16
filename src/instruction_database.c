@@ -8,6 +8,21 @@
 #include <sys/types.h>
 #include <assert.h>
 
+
+
+void get_name_for_symbol(char symbol_name[256], char* symbol_table_address, int symbol_table_index, char *string_table_address){
+	char name[9];
+	name[8] = 0;
+	char* header_address = symbol_table_address + symbol_table_index * 18;
+	memcpy(name, header_address, 8);
+	if(name[0] == 0 && name[1] == 0 && name[2] == 0	&& name[3] == 0){
+		int string_table_index = *(unsigned int*)((unsigned char*) name + 4);
+		strcpy(symbol_name, string_table_address + string_table_index);
+	}else{
+		strcpy(symbol_name, name);
+	}
+	return;
+}
 INSTRUCTION_DATABASE *create_database(char* filename) {
 	size_t file_size;
 	struct stat st;
@@ -53,12 +68,15 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 	instruction_database->symbol_count = symbol_count;
 	instruction_database->string_table_address = string_table_address;
 	char* text_section_address = NULL;
+	char* text_relocation_address = NULL;
+	int text_relocation_count = 0;
+
 	for (i=0;i<number_of_sections;i++){
-		char *header_address = 40*i + section_table_address;
+		char *header_address = 40*i + section_table_address;	
 		char section_name[256];
 		char name[9];
 		name[8] = 0;
-		memcpy(name, header_address, 8);
+		memcpy(name, header_address , 8);
 		if(name[0] == '/'){
 			int string_table_index = strtol(name+1, NULL, 10);
 			strcpy(section_name, string_table_address + string_table_index);
@@ -67,6 +85,8 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 		}
 		if(strcmp(".text", section_name) == 0){
 			text_section_address = (char*)base_address + *(unsigned int*)(header_address + 20);
+			text_relocation_address = (char*)base_address + *(unsigned int*)(header_address + 24);
+			text_relocation_count = *(unsigned short*)(header_address + 32);
 			break;
 		}
 
@@ -76,20 +96,15 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 		return NULL;
 	}
 	instruction_database->text_section_address = text_section_address;
+	instruction_database->text_relocation_address = text_relocation_address;
+	instruction_database->text_relocation_count = text_relocation_count;
+	INFO_LOG("%d relocations found at address = %p (%x)\n", text_relocation_count, text_relocation_address, (unsigned int)(text_relocation_address - base_address));
 	for(i = 0; i<256; i++)
 		instruction_database->instruction_translation_start[i] = NULL;
 	for(i = 0; i<symbol_count;i++) {
 		char *header_address = 18*i + symbol_table_address;
 		char symbol_name[256];
-		char name[9];
-		name[8] = 0;
-		memcpy(name, header_address, 8);
-		if(name[0] == 0 && name[1] == 0 && name[2] == 0	&& name[3] == 0){
-			int string_table_index = *(unsigned int*)((unsigned char*) name + 4);
-			strcpy(symbol_name, string_table_address + string_table_index);
-		}else{
-			strcpy(symbol_name, name);
-		}
+		get_name_for_symbol(symbol_name, symbol_table_address, i, string_table_address);
 		int opcode;
 		if(sscanf(symbol_name, "NES_INSTRUCTION_0x%2x", &opcode) == 1){
 			void* instruction_address = text_section_address + *(unsigned int*) (header_address + 8);
@@ -110,3 +125,27 @@ void* find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opc
 	return instruction_database->instruction_translation_start[opcode];
 }
 
+#define IMAGE_REL_AMD64_ADDR32 0x2
+long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opcode, int arg) {
+	char arg_string[30];
+	sprintf(arg_string, "__arg_%02x_%01x", opcode, arg);
+	int i = 0;
+	char* symbol_table_address = instruction_database->symbol_table_address;
+	char* string_table_address = instruction_database->string_table_address;
+	int symbol_table_count = instruction_database->symbol_count;
+	char symbol_name[256];
+	for(i=0;i<instruction_database->text_relocation_count;i++){
+		char* header_address = instruction_database->text_relocation_address + 10 * i;
+		int type = *(unsigned short*) (header_address + 8);
+		if(type == IMAGE_REL_AMD64_ADDR32){
+			int symbol_table_index = *(unsigned int*)(header_address + 4);
+			get_name_for_symbol(symbol_name, symbol_table_address, symbol_table_index, string_table_address);
+			if(strcmp(symbol_name, arg_string) == 0){
+				int RVA = *(unsigned int*)header_address;	
+				return RVA - ((char*)instruction_database->instruction_translation_start[opcode] - instruction_database->text_section_address);
+			}	
+			
+		}	
+	}
+	return -1;
+}

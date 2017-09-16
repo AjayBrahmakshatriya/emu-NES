@@ -7,6 +7,7 @@
 NES_INSTRUCTION_0x00:
 	nop
 	movq	$__arg_00_0, %rax
+	movq	$__arg_00_1, %rbx
 
 	.globl NES_INSTRUCTION_0x01
 NES_INSTRUCTION_0x01:
@@ -310,7 +311,9 @@ NES_INSTRUCTION_0x4b:
 
 	.globl NES_INSTRUCTION_0x4c
 NES_INSTRUCTION_0x4c:
-	nop
+	movq	(%r15), %rax
+	movq	$__arg_4c_0, %rsi
+	jmpq	*%rax
 
 	.globl NES_INSTRUCTION_0x4d
 NES_INSTRUCTION_0x4d:
@@ -438,7 +441,8 @@ NES_INSTRUCTION_0x6b:
 
 	.globl NES_INSTRUCTION_0x6c
 NES_INSTRUCTION_0x6c:
-	nop
+	movq	(%r15), %rax
+	jmpq	*%rax
 
 	.globl NES_INSTRUCTION_0x6d
 NES_INSTRUCTION_0x6d:

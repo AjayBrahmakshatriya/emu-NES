@@ -22,6 +22,7 @@ typedef struct {
 	FILE_HANDLE *file_handle;
 	EXECUTION_AREA *execution_area;
 	INSTRUCTION_DATABASE *instruction_database;
+	EMULATION_VECTOR emulation_vector;
 }EXECUTION_CONTEXT;
 
 
@@ -36,5 +37,6 @@ void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long 
 // Functions onward here are implemented in assembly
 
 void start_execution(EXECUTION_CONTEXT *execution_context);
+void basic_block_end(void);
 
 #endif

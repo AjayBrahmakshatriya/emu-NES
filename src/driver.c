@@ -2,13 +2,15 @@
 #include "log_messages.h"
 #include "nes_decoder.h"
 #include "instruction_database.h"
+#include "execution_area.h"
+#include "execution_context.h"
 
 #include <stdlib.h>
 
 
 #define IMAGE_BASE (void*) 0x300000000ULL
 #define ADDRESS_SPACE_START (void*) 0x400000000ULL
-
+#define EXECUTION_AREA_START (void*) 0x500000000ULL
 
 
 int main(int argc, char *argv[]) {
@@ -29,9 +31,14 @@ int main(int argc, char *argv[]) {
 	void *execution_start_address = identify_reset_address(file_handle);
 	INFO_LOG("Execution to start at %p\n", execution_start_address);
 	INSTRUCTION_DATABASE *instruction_database = create_database(argv[2]);
-	
-	decode_and_print_from(file_handle, execution_start_address, -1);
-	
+	EXECUTION_AREA *execution_area = create_execution_area(EXECUTION_AREA_START);
+	EXECUTION_CONTEXT execution_context;
+	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database);
+
+	start_execution(&execution_context);	
+
+	//decode_and_print_from(file_handle, execution_start_address, -1);
+	destroy_execution_area(execution_area);
 	unmap_file(file_handle);	
 	close_file(file_handle);
 	

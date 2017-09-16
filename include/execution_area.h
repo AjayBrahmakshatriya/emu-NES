@@ -7,7 +7,7 @@
 
 
 typedef struct {
-	void* address_map[256];
+	void* address_map[0x10000];
 }ADDRESS_MAP;
 
 typedef struct {
