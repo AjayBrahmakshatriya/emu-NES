@@ -21,6 +21,7 @@ void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HAN
 	execution_context->registers.S = 0xFF;
 	execution_context->registers.SR = 0x0;
 	execution_context->registers.emulation_vector = &(execution_context->emulation_vector);
+	execution_context->registers.base_address = file_handle->address_space_start;
 	intialize_emulation_vector(&(execution_context->emulation_vector));
 }
 

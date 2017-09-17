@@ -35,9 +35,9 @@ int main(int argc, char *argv[]) {
 	EXECUTION_CONTEXT execution_context;
 	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database);
 
-	start_execution(&execution_context);	
+	//start_execution(&execution_context);	
 
-	//decode_and_print_from(file_handle, execution_start_address, -1);
+	decode_and_print_from(file_handle, execution_start_address, -1);
 	destroy_execution_area(execution_area);
 	unmap_file(file_handle);	
 	close_file(file_handle);

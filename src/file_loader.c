@@ -81,12 +81,19 @@ int map_file(FILE_HANDLE *file_handle, void *address_space_start){
 	if(file_handle == NULL)
 		return -1;
 
-	if(address_space_start != mmap(address_space_start, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)){
+	if(address_space_start != mmap(address_space_start, 0x20000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)){
 		ERROR_LOG("Address space creation failed for %s\n", file_handle->file_path);
 		return -1;
 	}
 	file_handle->address_space_start = address_space_start;
-	
+	unsigned char *temp;
+
+	for(temp = address_space_start + 0x10000 + 0x0000; temp < (unsigned char*)(address_space_start) + 0x10000 + 0x0800; temp++){
+		*temp = 1;
+	}
+	for(; temp < (unsigned char*)(address_space_start) + 0x10000 + 0x10000; temp++){
+		*temp = 0;
+	}
 	unsigned char mapper_id = identify_mapper(file_handle->file_headers);
 	switch(mapper_id){
 		case INES_MAPPER_000: // Refer https://wiki.nesdev.com/w/index.php?title=INES_Mapper_000

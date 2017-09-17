@@ -1,17 +1,147 @@
-	.text
 
+
+	.set NEGATIVE,	0b10000000
+	.set OVERFLOW,	0b01000000
+	.set BIT5,	0b00100000	
+	.set BIT4,	0b00010000	
+	.set DECIMAL,	0b00001000	
+	.set IRQD,	0b00000100	
+	.set ZERO,	0b00000010	
+	.set CARRY,	0b00000001	
+
+	.set NOT_NEGATIVE,	0b01111111
+	.set NOT_OVERFLOW,	0b10111111
+	.set NOT_BIT5,		0b11011111	
+	.set NOT_BIT4,		0b11101111	
+	.set NOT_DECIMAL,	0b11110111	
+	.set NOT_IRQD,		0b11111011	
+	.set NOT_ZERO,		0b11111101	
+	.set NOT_CARRY,		0b11111110	
+
+	.macro	read_address
+	nop
+	.endm
+
+	.macro	write_address
+	nop
+	.endm
+
+	.macro	set_N
+	nop
+	.endm
+
+	.macro	set_Z
+	nop
+	.endm
+
+	.macro	set_C
+	nop
+	.endm
+
+	
+	.macro	read_indirect_X
+	leaq	(%rcx, %r11), %r8
+	movb 	%r8b, %r8b
+	movb	(%rbx, %r8), %r9b
+	incb	%r8b
+	movb	(%rbx, %r8), %r8b
+	shlq	$8, %r8
+	orq	%r9, %r8
+	movq	%r8, %rcx
+	read_address
+	.endm
+
+	.macro	read_indirect_Y
+	movb	(%rbx, %rcx), %r8b
+	incb	%cl
+	movb	(%rbx, %rcx), %r9b
+	shlq	$8, %r9
+	orq	%r9, %r8
+	leaq	(%r8, %r12), %rcx	
+	read_address
+	.endm
+
+
+	.macro	read_zpg_X
+	leaq	(%r11, %rcx), %rax
+	movb	%al, %al
+	movb	(%rbx, %rax), %al
+	.endm
+
+	.macro	write_zpg_X
+	leaq	(%r11, %rcx), %r8
+	movb	%r8b, %r8b
+	movb	%al, (%rbx, %r8)
+	.endm
+
+	.macro	write_zpg_Y
+	leaq	(%r12, %rcx), %r8
+	movb	%r8b, %r8b
+	movb	%al, (%rbx, %r8)
+	.endm
+
+	.macro	read_zpg_Y
+	leaq	(%r12, %rcx), %rax
+	movb	%al, %al
+	movb	(%rbx, %rax), %al
+	.endm
+
+	.macro	read_abs
+	read_address
+	.endm
+	
+	.macro	write_abs
+	write_address
+	.endm
+	
+	.macro	read_zpg
+	movb	(%rbx, %rcx),  %al
+	.endm
+
+	.macro	write_zpg
+	movb	%al, (%rbx, %rcx)
+	.endm
+
+
+	.macro	read_abs_X
+	leaq	(%rcx, %r11), %rcx
+	read_address
+	.endm
+
+	.macro	write_abs_X
+	leaq	(%rcx, %r11), %rcx
+	write_address
+	.endm
+
+
+	.macro	read_abs_Y
+	leaq	(%rcx, %r12), %rcx
+	read_address
+	.endm
+
+	.macro	write_abs_Y
+	leaq	(%rcx, %r12), %rcx
+	write_address
+	.endm
+
+	.text
+	
 
 ## Translations for 256 opcodes to x86_64
 
 	.globl NES_INSTRUCTION_0x00
 NES_INSTRUCTION_0x00:
-	nop
-	movq	$__arg_00_0, %rax
-	movq	$__arg_00_1, %rbx
+	movq	0x8(%r15), %rax
+	jmpq	*%rax
+
 
 	.globl NES_INSTRUCTION_0x01
 NES_INSTRUCTION_0x01:
-	nop
+	movq	$__arg_01_0, %rcx
+	read_indirect_X
+	orb	%al, %r10b
+	set_N
+	set_Z 
 
 	.globl NES_INSTRUCTION_0x02
 NES_INSTRUCTION_0x02:
@@ -27,11 +157,23 @@ NES_INSTRUCTION_0x04:
 
 	.globl NES_INSTRUCTION_0x05
 NES_INSTRUCTION_0x05:
-	nop
+	movq	$__arg_05_0, %rcx
+	read_zpg
+	orb	%al, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0x06
 NES_INSTRUCTION_0x06:
-	nop
+	movq	$__arg_06_0, %rcx
+	read_zpg
+	shlb	$1, %al
+	set_N
+	set_Z
+	set_C
+	write_zpg
+
 
 	.globl NES_INSTRUCTION_0x07
 NES_INSTRUCTION_0x07:
@@ -39,15 +181,25 @@ NES_INSTRUCTION_0x07:
 
 	.globl NES_INSTRUCTION_0x08
 NES_INSTRUCTION_0x08:
-	nop
+	decq	%r13
+	movq	%r14, %rax
+	movq	%r13, %rcx
+	write_zpg
+	
 
 	.globl NES_INSTRUCTION_0x09
 NES_INSTRUCTION_0x09:
-	nop
+	movq	$__arg_09_0, %rcx
+	orb	%cl, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x0a
 NES_INSTRUCTION_0x0a:
-	nop
+	shlb	$1, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0x0b
 NES_INSTRUCTION_0x0b:
@@ -59,23 +211,48 @@ NES_INSTRUCTION_0x0c:
 
 	.globl NES_INSTRUCTION_0x0d
 NES_INSTRUCTION_0x0d:
-	nop
+	movq	$__arg_0d_0, %rcx
+	read_abs
+	orb	%al, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0x0e
 NES_INSTRUCTION_0x0e:
-	nop
-
+	movq	$__arg_0e_0, %rcx
+	read_abs
+	shlb	$1, %al
+	set_N
+	set_Z
+	set_C
+	write_abs
+	
 	.globl NES_INSTRUCTION_0x0f
 NES_INSTRUCTION_0x0f:
 	nop
 
 	.globl NES_INSTRUCTION_0x10
 NES_INSTRUCTION_0x10:
-	nop
-
+	movq	$NEGATIVE, %rax
+	andq	%r14, %rax
+	jnz	inst_10_end 
+	movq	$__arg_10_0, %rcx
+	movq	$__arg_10_1, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_10_end:
+	
 	.globl NES_INSTRUCTION_0x11
 NES_INSTRUCTION_0x11:
-	nop
+	movq	$__arg_11_0, %rcx
+	read_indirect_Y
+	orb	%al, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x12
 NES_INSTRUCTION_0x12:
@@ -91,11 +268,22 @@ NES_INSTRUCTION_0x14:
 
 	.globl NES_INSTRUCTION_0x15
 NES_INSTRUCTION_0x15:
-	nop
+	movq	$__arg_15_0, %rcx
+	read_zpg_X
+	orb	%al, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0x16
 NES_INSTRUCTION_0x16:
-	nop
+	movq	$__arg_16_0, %rcx
+	read_zpg_X
+	shlb	$1, %al
+	set_N
+	set_Z
+	set_C
+	write_zpg_X
 
 	.globl NES_INSTRUCTION_0x17
 NES_INSTRUCTION_0x17:
@@ -103,11 +291,15 @@ NES_INSTRUCTION_0x17:
 
 	.globl NES_INSTRUCTION_0x18
 NES_INSTRUCTION_0x18:
-	nop
+	andb	$NOT_CARRY, %r14b
 
 	.globl NES_INSTRUCTION_0x19
 NES_INSTRUCTION_0x19:
-	nop
+	movq	$__arg_19_0, %rcx
+	read_abs_Y
+	orb	%al, %r10b
+	set_Z
+	set_N
 
 	.globl NES_INSTRUCTION_0x1a
 NES_INSTRUCTION_0x1a:
@@ -123,11 +315,22 @@ NES_INSTRUCTION_0x1c:
 
 	.globl NES_INSTRUCTION_0x1d
 NES_INSTRUCTION_0x1d:
-	nop
+	movq	$__arg_1d_0, %rcx
+	read_abs_X
+	orb	%al, %r10b
+	set_Z
+	set_N
 
 	.globl NES_INSTRUCTION_0x1e
 NES_INSTRUCTION_0x1e:
-	nop
+	movq	$__arg_1e_0, %rcx
+	read_abs_X
+	shlb	$1, %al
+	set_N
+	set_Z
+	set_C
+	write_address
+
 
 	.globl NES_INSTRUCTION_0x1f
 NES_INSTRUCTION_0x1f:

@@ -15,11 +15,17 @@ typedef struct {
 	unsigned long long  S; // Mapped to %r13 	// Offset 0x18
 	unsigned long long SR; // Mapped to %r14	// Offset 0x20
 	EMULATION_VECTOR *emulation_vector; // Mapped to %r15	// Offset 0x28
+	void *base_address;	// Mapped to %rbx	// Offset 0x28
+	unsigned long long FreeSlot1;			// Offset 0x38
+	unsigned long long FreeSlot2;			// Offset 0x40
+	unsigned long long FreeSlot3;			// Offset 0x48
+	unsigned long long FreeSlot4;			// Offset 0x50
+	unsigned long long FreeSlot5;			// Offset 0x58	
 }REGISTERS;
 
 typedef struct {
 	REGISTERS registers;	// Offset 0	
-	FILE_HANDLE *file_handle;
+	FILE_HANDLE *file_handle; // Offset 0x60
 	EXECUTION_AREA *execution_area;
 	INSTRUCTION_DATABASE *instruction_database;
 	EMULATION_VECTOR emulation_vector;
