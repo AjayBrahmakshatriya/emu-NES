@@ -40,14 +40,12 @@
 
 	
 	.macro	read_indirect_X
-	leaq	(%rcx, %r11), %r8
-	movb 	%r8b, %r8b
-	movb	(%rbx, %r8), %r9b
-	incb	%r8b
-	movb	(%rbx, %r8), %r8b
-	shlq	$8, %r8
-	orq	%r9, %r8
-	movq	%r8, %rcx
+	addb	%r11b, %cl
+	movb	(%rbx, %rcx), %r9b
+	incb	%cl
+	movb	(%rbx, %rcx), %cl
+	shlq	$8, %rcx
+	orq	%r9, %rcx
 	read_address
 	.endm
 
