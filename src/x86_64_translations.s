@@ -53,6 +53,16 @@
 	read_address
 	.endm
 
+	.macro	write_indirect_X
+	addb	%r11b, %cl
+	movb	(%rbx, %rcx), %r9b
+	incb	%cl
+	movb	(%rbx, %rcx), %cl
+	shlq	$8, %rcx
+	orq	%r9, %rcx
+	write_address
+	.endm
+
 	.macro	read_indirect_Y
 	movb	(%rbx, %rcx), %r8b
 	incb	%cl
@@ -63,6 +73,15 @@
 	read_address
 	.endm
 
+	.macro	write_indirect_Y
+	movb	(%rbx, %rcx), %r8b
+	incb	%cl
+	movb	(%rbx, %rcx), %r9b
+	shlq	$8, %r9
+	orq	%r9, %r8
+	leaq	(%r8, %r12), %rcx	
+	write_address
+	.endm
 
 	.macro	read_zpg_X
 	leaq	(%r11, %rcx), %rax
@@ -595,7 +614,7 @@ NES_INSTRUCTION_0x3e:
 	set_C
 	set_Z
 	set_N
-	write_abs_X
+	write_address
 
 	.globl NES_INSTRUCTION_0x3f
 NES_INSTRUCTION_0x3f:
@@ -798,7 +817,7 @@ NES_INSTRUCTION_0x5e:
 	shrb	$1, %al
 	set_Z
 	set_C
-	write_abs_X
+	write_address
 
 	.globl NES_INSTRUCTION_0x5f
 NES_INSTRUCTION_0x5f:
@@ -976,11 +995,36 @@ NES_INSTRUCTION_0x6f:
 
 	.globl NES_INSTRUCTION_0x70
 NES_INSTRUCTION_0x70:
-	nop
+	movq	$OVERFLOW, %rax
+	andb	%r14b, %al
+	jnz	inst_70_end 
+	movq	$__arg_70_0, %rcx
+	movq	$__arg_70_p, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_70_end:
+	
 
 	.globl NES_INSTRUCTION_0x71
 NES_INSTRUCTION_0x71:
-	nop
+	movq	$__arg_71_0, %rcx
+	read_indirect_Y
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	adcb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0x72
 NES_INSTRUCTION_0x72:
@@ -996,11 +1040,39 @@ NES_INSTRUCTION_0x74:
 
 	.globl NES_INSTRUCTION_0x75
 NES_INSTRUCTION_0x75:
-	nop
+	movq	$__arg_75_0, %rcx
+	read_zpg_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	adcb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0x76
 NES_INSTRUCTION_0x76:
-	nop
+	movq	$__arg_76_0, %rcx
+	read_zpg_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	rcrb	$1, %al
+	set_C
+	set_Z
+	set_N
+	write_zpg_X	
 
 	.globl NES_INSTRUCTION_0x77
 NES_INSTRUCTION_0x77:
@@ -1008,11 +1080,25 @@ NES_INSTRUCTION_0x77:
 
 	.globl NES_INSTRUCTION_0x78
 NES_INSTRUCTION_0x78:
-	nop
+	orb	$IRQD, %r14b
 
 	.globl NES_INSTRUCTION_0x79
 NES_INSTRUCTION_0x79:
-	nop
+	movq	$__arg_79_0, %rcx
+	read_abs_Y
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	adcb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0x7a
 NES_INSTRUCTION_0x7a:
@@ -1028,11 +1114,39 @@ NES_INSTRUCTION_0x7c:
 
 	.globl NES_INSTRUCTION_0x7d
 NES_INSTRUCTION_0x7d:
-	nop
+	movq	$__arg_7d_0, %rcx
+	read_abs_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	adcb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0x7e
 NES_INSTRUCTION_0x7e:
-	nop
+	movq	$__arg_7e_0, %rcx
+	read_abs_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	rcrb	$1, %al
+	set_C
+	set_Z
+	set_N
+	write_address	
 
 	.globl NES_INSTRUCTION_0x7f
 NES_INSTRUCTION_0x7f:
@@ -1044,7 +1158,10 @@ NES_INSTRUCTION_0x80:
 
 	.globl NES_INSTRUCTION_0x81
 NES_INSTRUCTION_0x81:
-	nop
+	movq	$__arg_81_0, %rcx
+	movb	%r10b, %al
+	write_indirect_X
+	
 
 	.globl NES_INSTRUCTION_0x82
 NES_INSTRUCTION_0x82:
@@ -1056,15 +1173,21 @@ NES_INSTRUCTION_0x83:
 
 	.globl NES_INSTRUCTION_0x84
 NES_INSTRUCTION_0x84:
-	nop
+	movq	$__arg_84_0, %rcx
+	movb	%r12b, %al
+	write_zpg
 
 	.globl NES_INSTRUCTION_0x85
 NES_INSTRUCTION_0x85:
-	nop
+	movq	$__arg_85_0, %rcx
+	movb	%r10b, %al
+	write_zpg
 
 	.globl NES_INSTRUCTION_0x86
 NES_INSTRUCTION_0x86:
-	nop
+	movq	$__arg_86_0, %rcx
+	movb	%r11b, %al
+	write_zpg
 
 	.globl NES_INSTRUCTION_0x87
 NES_INSTRUCTION_0x87:
@@ -1072,7 +1195,9 @@ NES_INSTRUCTION_0x87:
 
 	.globl NES_INSTRUCTION_0x88
 NES_INSTRUCTION_0x88:
-	nop
+	decb	%r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x89
 NES_INSTRUCTION_0x89:
@@ -1080,7 +1205,10 @@ NES_INSTRUCTION_0x89:
 
 	.globl NES_INSTRUCTION_0x8a
 NES_INSTRUCTION_0x8a:
-	nop
+	movb	%r11b, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x8b
 NES_INSTRUCTION_0x8b:
@@ -1088,15 +1216,21 @@ NES_INSTRUCTION_0x8b:
 
 	.globl NES_INSTRUCTION_0x8c
 NES_INSTRUCTION_0x8c:
-	nop
+	movq	$__arg_8c_0, %rcx
+	movb	%r12b, %al
+	write_abs
 
 	.globl NES_INSTRUCTION_0x8d
 NES_INSTRUCTION_0x8d:
-	nop
+	movq	$__arg_8d_0, %rcx
+	movb	%r10b, %al
+	write_abs
 
 	.globl NES_INSTRUCTION_0x8e
 NES_INSTRUCTION_0x8e:
-	nop
+	movq	$__arg_8e_0, %rcx
+	movb	%r11b, %al
+	write_abs
 
 	.globl NES_INSTRUCTION_0x8f
 NES_INSTRUCTION_0x8f:
@@ -1104,11 +1238,24 @@ NES_INSTRUCTION_0x8f:
 
 	.globl NES_INSTRUCTION_0x90
 NES_INSTRUCTION_0x90:
-	nop
+	movq	$CARRY, %rax
+	andb	%r14b, %al
+	jnz	inst_90_end 
+	movq	$__arg_90_0, %rcx
+	movq	$__arg_90_p, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_90_end:
 
 	.globl NES_INSTRUCTION_0x91
 NES_INSTRUCTION_0x91:
-	nop
+	movq	$__arg_91_0, %rcx
+	movb	%r10b, %al
+	write_indirect_Y
+	
 
 	.globl NES_INSTRUCTION_0x92
 NES_INSTRUCTION_0x92:
@@ -1120,15 +1267,21 @@ NES_INSTRUCTION_0x93:
 
 	.globl NES_INSTRUCTION_0x94
 NES_INSTRUCTION_0x94:
-	nop
+	movq	$__arg_94_0, %rcx
+	movb	%r12b, %al
+	write_zpg_X
 
 	.globl NES_INSTRUCTION_0x95
 NES_INSTRUCTION_0x95:
-	nop
+	movq	$__arg_95_0, %rcx
+	movb	%r10b, %al
+	write_zpg_X
 
 	.globl NES_INSTRUCTION_0x96
 NES_INSTRUCTION_0x96:
-	nop
+	movq	$__arg_96_0, %rcx
+	movb	%r11b, %al
+	write_zpg_Y
 
 	.globl NES_INSTRUCTION_0x97
 NES_INSTRUCTION_0x97:
@@ -1136,15 +1289,23 @@ NES_INSTRUCTION_0x97:
 
 	.globl NES_INSTRUCTION_0x98
 NES_INSTRUCTION_0x98:
-	nop
+	movb	%r12b, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x99
 NES_INSTRUCTION_0x99:
-	nop
+	movq	$__arg_99_0, %rcx
+	movb	%r10b, %al
+	write_abs_Y
 
 	.globl NES_INSTRUCTION_0x9a
 NES_INSTRUCTION_0x9a:
-	nop
+	movb	%r11b, %r13b
+	testb	%r13b, %r13b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0x9b
 NES_INSTRUCTION_0x9b:
@@ -1156,7 +1317,9 @@ NES_INSTRUCTION_0x9c:
 
 	.globl NES_INSTRUCTION_0x9d
 NES_INSTRUCTION_0x9d:
-	nop
+	movq	$__arg_9d_0, %rcx
+	movb	%r10b, %al
+	write_abs_X
 
 	.globl NES_INSTRUCTION_0x9e
 NES_INSTRUCTION_0x9e:
@@ -1168,15 +1331,28 @@ NES_INSTRUCTION_0x9f:
 
 	.globl NES_INSTRUCTION_0xa0
 NES_INSTRUCTION_0xa0:
-	nop
+	movq	$__arg_a0_0, %rcx
+	movb	%cl, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa1
 NES_INSTRUCTION_0xa1:
-	nop
+	movq	$__arg_a1_0, %rcx
+	read_indirect_X
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa2
 NES_INSTRUCTION_0xa2:
-	nop
+	movq	$__arg_a2_0, %rcx
+	movb	%cl, %r11b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa3
 NES_INSTRUCTION_0xa3:
@@ -1184,15 +1360,30 @@ NES_INSTRUCTION_0xa3:
 
 	.globl NES_INSTRUCTION_0xa4
 NES_INSTRUCTION_0xa4:
-	nop
+	movq	$__arg_a4_0, %rcx
+	read_zpg
+	movb	%al, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa5
 NES_INSTRUCTION_0xa5:
-	nop
+	movq	$__arg_a5_0, %rcx
+	read_zpg
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa6
 NES_INSTRUCTION_0xa6:
-	nop
+	movq	$__arg_a6_0, %rcx
+	read_zpg
+	movb	%al, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa7
 NES_INSTRUCTION_0xa7:
@@ -1200,15 +1391,26 @@ NES_INSTRUCTION_0xa7:
 
 	.globl NES_INSTRUCTION_0xa8
 NES_INSTRUCTION_0xa8:
-	nop
+	movb	%r10b, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xa9
 NES_INSTRUCTION_0xa9:
-	nop
+	movq	$__arg_a9_0, %rcx
+	movb	%cl, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xaa
 NES_INSTRUCTION_0xaa:
-	nop
+	movb	%r10b, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z	
 
 	.globl NES_INSTRUCTION_0xab
 NES_INSTRUCTION_0xab:
@@ -1216,15 +1418,30 @@ NES_INSTRUCTION_0xab:
 
 	.globl NES_INSTRUCTION_0xac
 NES_INSTRUCTION_0xac:
-	nop
+	movq	$__arg_ac_0, %rcx
+	read_abs
+	movb	%al, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xad
 NES_INSTRUCTION_0xad:
-	nop
+	movq	$__arg_ad_0, %rcx
+	read_abs
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xae
 NES_INSTRUCTION_0xae:
-	nop
+	movq	$__arg_ae_0, %rcx
+	read_abs
+	movb	%al, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xaf
 NES_INSTRUCTION_0xaf:
@@ -1232,11 +1449,27 @@ NES_INSTRUCTION_0xaf:
 
 	.globl NES_INSTRUCTION_0xb0
 NES_INSTRUCTION_0xb0:
+	movq	$CARRY, %rax
+	andb	%r14b, %al
+	jz	inst_b0_end 
+	movq	$__arg_b0_0, %rcx
+	movq	$__arg_b0_p, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_b0_end:
 	nop
 
 	.globl NES_INSTRUCTION_0xb1
 NES_INSTRUCTION_0xb1:
-	nop
+	movq	$__arg_b1_0, %rcx
+	read_indirect_Y
+	movb	%al, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xb2
 NES_INSTRUCTION_0xb2:
@@ -1248,15 +1481,32 @@ NES_INSTRUCTION_0xb3:
 
 	.globl NES_INSTRUCTION_0xb4
 NES_INSTRUCTION_0xb4:
-	nop
+	movq	$__arg_b4_0, %rcx
+	read_zpg_X
+	movb	%al, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xb5
 NES_INSTRUCTION_0xb5:
-	nop
+	movq	$__arg_b5_0, %rcx
+	read_zpg_X
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xb6
 NES_INSTRUCTION_0xb6:
-	nop
+	movq	$__arg_b6_0, %rcx
+	read_zpg_Y
+	movb	%al, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xb7
 NES_INSTRUCTION_0xb7:
@@ -1264,15 +1514,25 @@ NES_INSTRUCTION_0xb7:
 
 	.globl NES_INSTRUCTION_0xb8
 NES_INSTRUCTION_0xb8:
-	nop
+	andb	$NOT_OVERFLOW, %r14b
 
 	.globl NES_INSTRUCTION_0xb9
 NES_INSTRUCTION_0xb9:
-	nop
+	movq	$__arg_b9_0, %rcx
+	read_abs_Y
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xba
 NES_INSTRUCTION_0xba:
-	nop
+	movb	%r13b, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xbb
 NES_INSTRUCTION_0xbb:
@@ -1280,15 +1540,30 @@ NES_INSTRUCTION_0xbb:
 
 	.globl NES_INSTRUCTION_0xbc
 NES_INSTRUCTION_0xbc:
-	nop
+	movq	$__arg_bc_0, %rcx
+	read_abs_X
+	movb	%al, %r12b
+	testb	%r12b, %r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xbd
 NES_INSTRUCTION_0xbd:
-	nop
+	movq	$__arg_bd_0, %rcx
+	read_abs_X
+	movb	%al, %r10b
+	testb	%r10b, %r10b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xbe
 NES_INSTRUCTION_0xbe:
-	nop
+	movq	$__arg_be_0, %rcx
+	read_abs_Y
+	movb	%al, %r11b
+	testb	%r11b, %r11b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xbf
 NES_INSTRUCTION_0xbf:
@@ -1296,11 +1571,21 @@ NES_INSTRUCTION_0xbf:
 
 	.globl NES_INSTRUCTION_0xc0
 NES_INSTRUCTION_0xc0:
-	nop
+	movq	$__arg_c0_0, %rax
+	cmpb	%al, %r12b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xc1
 NES_INSTRUCTION_0xc1:
-	nop
+	movq	$__arg_c1_0, %rcx
+	read_indirect_X
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+
 
 	.globl NES_INSTRUCTION_0xc2
 NES_INSTRUCTION_0xc2:
@@ -1312,15 +1597,33 @@ NES_INSTRUCTION_0xc3:
 
 	.globl NES_INSTRUCTION_0xc4
 NES_INSTRUCTION_0xc4:
-	nop
+	movq	$__arg_c4_0, %rcx
+	read_zpg
+	cmpb	%al, %r12b
+	set_N
+	set_Z
+	set_C
+
 
 	.globl NES_INSTRUCTION_0xc5
 NES_INSTRUCTION_0xc5:
-	nop
+	movq	$__arg_c5_0, %rcx
+	read_zpg
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+
 
 	.globl NES_INSTRUCTION_0xc6
 NES_INSTRUCTION_0xc6:
-	nop
+	movq	$__arg_c6_0, %rcx
+	read_zpg
+	decb	%al
+	set_N
+	set_Z
+	write_zpg
+
 
 	.globl NES_INSTRUCTION_0xc7
 NES_INSTRUCTION_0xc7:
@@ -1328,15 +1631,23 @@ NES_INSTRUCTION_0xc7:
 
 	.globl NES_INSTRUCTION_0xc8
 NES_INSTRUCTION_0xc8:
-	nop
+	incb	%r12b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xc9
 NES_INSTRUCTION_0xc9:
-	nop
+	movq	$__arg_c9_0, %rax
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xca
 NES_INSTRUCTION_0xca:
-	nop
+	decb	%r11b
+	set_N
+	set_Z
 
 	.globl NES_INSTRUCTION_0xcb
 NES_INSTRUCTION_0xcb:
@@ -1344,15 +1655,30 @@ NES_INSTRUCTION_0xcb:
 
 	.globl NES_INSTRUCTION_0xcc
 NES_INSTRUCTION_0xcc:
-	nop
+	movq	$__arg_cc_0, %rcx
+	read_abs
+	cmpb	%al, %r12b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xcd
 NES_INSTRUCTION_0xcd:
-	nop
+	movq	$__arg_cd_0, %rcx
+	read_abs
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xce
 NES_INSTRUCTION_0xce:
-	nop
+	movq	$__arg_ce_0, %rcx
+	read_abs
+	decb	%al
+	set_N
+	set_Z
+	write_abs
 
 	.globl NES_INSTRUCTION_0xcf
 NES_INSTRUCTION_0xcf:
@@ -1360,11 +1686,27 @@ NES_INSTRUCTION_0xcf:
 
 	.globl NES_INSTRUCTION_0xd0
 NES_INSTRUCTION_0xd0:
-	nop
+	movq	$ZERO, %rax
+	andb	%r14b, %al
+	jnz	inst_d0_end 
+	movq	$__arg_d0_0, %rcx
+	movq	$__arg_d0_p, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_d0_end:
+	
 
 	.globl NES_INSTRUCTION_0xd1
 NES_INSTRUCTION_0xd1:
-	nop
+	movq	$__arg_d1_0, %rcx
+	read_indirect_Y
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xd2
 NES_INSTRUCTION_0xd2:
@@ -1380,11 +1722,21 @@ NES_INSTRUCTION_0xd4:
 
 	.globl NES_INSTRUCTION_0xd5
 NES_INSTRUCTION_0xd5:
-	nop
+	movq	$__arg_d5_0, %rcx
+	read_zpg_X
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xd6
 NES_INSTRUCTION_0xd6:
-	nop
+	movq	$__arg_d6_0, %rcx
+	read_zpg_X
+	decb	%al
+	set_N
+	set_Z
+	write_zpg_X
 
 	.globl NES_INSTRUCTION_0xd7
 NES_INSTRUCTION_0xd7:
@@ -1392,11 +1744,16 @@ NES_INSTRUCTION_0xd7:
 
 	.globl NES_INSTRUCTION_0xd8
 NES_INSTRUCTION_0xd8:
-	nop
+	andb	$NOT_DECIMAL, %r14b
 
 	.globl NES_INSTRUCTION_0xd9
 NES_INSTRUCTION_0xd9:
-	nop
+	movq	$__arg_d9_0, %rcx
+	read_abs_Y
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xda
 NES_INSTRUCTION_0xda:
@@ -1412,11 +1769,21 @@ NES_INSTRUCTION_0xdc:
 
 	.globl NES_INSTRUCTION_0xdd
 NES_INSTRUCTION_0xdd:
-	nop
+	movq	$__arg_dd_0, %rcx
+	read_abs_X
+	cmpb	%al, %r10b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xde
 NES_INSTRUCTION_0xde:
-	nop
+	movq	$__arg_de_0, %rcx
+	read_abs_X
+	decb	%al
+	set_N
+	set_Z
+	write_address	
 
 	.globl NES_INSTRUCTION_0xdf
 NES_INSTRUCTION_0xdf:
@@ -1424,11 +1791,30 @@ NES_INSTRUCTION_0xdf:
 
 	.globl NES_INSTRUCTION_0xe0
 NES_INSTRUCTION_0xe0:
-	nop
+	movq	$__arg_e0_0, %rax
+	cmpb	%al, %r11b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xe1
 NES_INSTRUCTION_0xe1:
-	nop
+	movq	$__arg_e1_0, %rcx
+	read_indirect_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+	
 
 	.globl NES_INSTRUCTION_0xe2
 NES_INSTRUCTION_0xe2:
@@ -1440,15 +1826,40 @@ NES_INSTRUCTION_0xe3:
 
 	.globl NES_INSTRUCTION_0xe4
 NES_INSTRUCTION_0xe4:
-	nop
+	movq	$__arg_e4_0, %rcx
+	read_zpg
+	cmpb	%al, %r11b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xe5
 NES_INSTRUCTION_0xe5:
-	nop
+	movq	$__arg_e5_0, %rcx
+	read_zpg
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+
 
 	.globl NES_INSTRUCTION_0xe6
 NES_INSTRUCTION_0xe6:
-	nop
+	movq	$__arg_e6_0, %rcx
+	read_zpg
+	incb	%al
+	set_N
+	set_Z
+	write_zpg
 
 	.globl NES_INSTRUCTION_0xe7
 NES_INSTRUCTION_0xe7:
@@ -1456,11 +1867,28 @@ NES_INSTRUCTION_0xe7:
 
 	.globl NES_INSTRUCTION_0xe8
 NES_INSTRUCTION_0xe8:
-	nop
+	incb	%r11b
+	set_N
+	set_Z
+
 
 	.globl NES_INSTRUCTION_0xe9
 NES_INSTRUCTION_0xe9:
-	nop
+	movq	$__arg_e9_0, %rax
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+	
 
 	.globl NES_INSTRUCTION_0xea
 NES_INSTRUCTION_0xea:
@@ -1472,15 +1900,40 @@ NES_INSTRUCTION_0xeb:
 
 	.globl NES_INSTRUCTION_0xec
 NES_INSTRUCTION_0xec:
-	nop
+	movq	$__arg_ec_0, %rcx
+	read_abs
+	cmpb	%al, %r11b
+	set_N
+	set_Z
+	set_C
 
 	.globl NES_INSTRUCTION_0xed
 NES_INSTRUCTION_0xed:
-	nop
+	movq	$__arg_ed_0, %rcx
+	read_abs
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+	
 
 	.globl NES_INSTRUCTION_0xee
 NES_INSTRUCTION_0xee:
-	nop
+	movq	$__arg_ee_0, %rcx
+	read_abs
+	incb	%al
+	set_N
+	set_Z
+	write_abs
 
 	.globl NES_INSTRUCTION_0xef
 NES_INSTRUCTION_0xef:
@@ -1488,11 +1941,37 @@ NES_INSTRUCTION_0xef:
 
 	.globl NES_INSTRUCTION_0xf0
 NES_INSTRUCTION_0xf0:
+	movq	$ZERO, %rax
+	andb	%r14b, %al
+	jz	inst_f0_end 
+	movq	$__arg_f0_0, %rcx
+	movq	$__arg_f0_p, %rdx
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	leaq	(%rbx, %rdx), %rsi
+	movq	(%r15), %rax	
+	jmpq	*%rax
+inst_f0_end:
 	nop
 
 	.globl NES_INSTRUCTION_0xf1
 NES_INSTRUCTION_0xf1:
-	nop
+	movq	$__arg_f1_0, %rcx
+	read_indirect_Y
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+	
 
 	.globl NES_INSTRUCTION_0xf2
 NES_INSTRUCTION_0xf2:
@@ -1508,11 +1987,32 @@ NES_INSTRUCTION_0xf4:
 
 	.globl NES_INSTRUCTION_0xf5
 NES_INSTRUCTION_0xf5:
-	nop
+	movq	$__arg_f5_0, %rcx
+	read_zpg_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
+	
 
 	.globl NES_INSTRUCTION_0xf6
 NES_INSTRUCTION_0xf6:
-	nop
+	movq	$__arg_f6_0, %rcx
+	read_zpg_X
+	incb	%al
+	set_N
+	set_Z
+	write_zpg_X
+
 
 	.globl NES_INSTRUCTION_0xf7
 NES_INSTRUCTION_0xf7:
@@ -1520,11 +2020,25 @@ NES_INSTRUCTION_0xf7:
 
 	.globl NES_INSTRUCTION_0xf8
 NES_INSTRUCTION_0xf8:
-	nop
+	orb	$DECIMAL, %r14b
 
 	.globl NES_INSTRUCTION_0xf9
 NES_INSTRUCTION_0xf9:
-	nop
+	movq	$__arg_f9_0, %rcx
+	read_abs_Y
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0xfa
 NES_INSTRUCTION_0xfa:
@@ -1540,11 +2054,30 @@ NES_INSTRUCTION_0xfc:
 
 	.globl NES_INSTRUCTION_0xfd
 NES_INSTRUCTION_0xfd:
-	nop
+	movq	$__arg_fd_0, %rcx
+	read_abs_X
+	testb	$CARRY, %r14b
+	jz 1f
+	movb	$1, %r8b
+	jmp 2f
+1:
+	movb	$0, %r8b
+2:
+	rcrb	$1, %r8b
+	sbbb	%al, %r10b
+	set_N
+	set_Z
+	set_C
+	set_V
 
 	.globl NES_INSTRUCTION_0xfe
 NES_INSTRUCTION_0xfe:
-	nop
+	movq	$__arg_fe_0, %rcx
+	read_abs_X
+	incb	%al
+	set_N
+	set_Z
+	write_address
 
 	.globl NES_INSTRUCTION_0xff
 NES_INSTRUCTION_0xff:
