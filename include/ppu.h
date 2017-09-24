@@ -19,6 +19,15 @@
 
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
+
+
+typedef enum {
+	VERTICAL_BLANK = 0,
+	RENDERING = 1,
+}PPU_STATES;
+
+
+
 typedef struct {
 	unsigned char *output_buffer;
 

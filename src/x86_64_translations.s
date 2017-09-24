@@ -112,7 +112,7 @@
 	movzbq	(%rbx, %rcx), %r9
 	shlq	$8, %r9
 	orq	%r9, %r8
-	leaq	(%r8, %r12), %rcx	
+	leaq	(%r8, %r12), %rcx
 	read_address
 	.endm
 
@@ -476,7 +476,7 @@ NES_INSTRUCTION_0x28:
 
 	.globl NES_INSTRUCTION_0x29
 NES_INSTRUCTION_0x29:
-	movq	$__arg_09_0, %rcx
+	movq	$__arg_29_0, %rcx
 	andb	%cl, %r10b
 	set_N
 	set_Z
