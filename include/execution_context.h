@@ -4,9 +4,13 @@
 #include "file_loader.h"
 #include "execution_area.h"
 #include "instruction_database.h"
+#include "ppu.h"
 
 typedef struct {
 	void (*basic_block_end)(void);
+	void (*terminate_execution)(void);
+	void (*read_non_ram_address)(void);
+	void (*write_non_ram_address)(void);
 }EMULATION_VECTOR;
 typedef struct {
 	unsigned long long  A; // Mapped to %r10 	// Offset 0x00
@@ -29,20 +33,24 @@ typedef struct {
 	EXECUTION_AREA *execution_area;
 	INSTRUCTION_DATABASE *instruction_database;
 	EMULATION_VECTOR emulation_vector;
+	PPU *ppu;
 }EXECUTION_CONTEXT;
 
 
 
 
 
-void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_database);
+void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_databasei, PPU *ppu);
 void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long long address);
 
 
+unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address);
+void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address, unsigned char value);
 
 // Functions onward here are implemented in assembly
 
 void start_execution(EXECUTION_CONTEXT *execution_context);
 void basic_block_end(void);
-
+void read_non_ram_address(void);
+void write_non_ram_address(void);
 #endif

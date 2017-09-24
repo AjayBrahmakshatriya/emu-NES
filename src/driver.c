@@ -4,6 +4,7 @@
 #include "instruction_database.h"
 #include "execution_area.h"
 #include "execution_context.h"
+#include "ppu.h"
 
 #include <stdlib.h>
 
@@ -32,12 +33,19 @@ int main(int argc, char *argv[]) {
 	INFO_LOG("Execution to start at %p\n", execution_start_address);
 	INSTRUCTION_DATABASE *instruction_database = create_database(argv[2]);
 	EXECUTION_AREA *execution_area = create_execution_area(EXECUTION_AREA_START);
+	PPU *ppu = create_ppu();
+
 	EXECUTION_CONTEXT execution_context;
-	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database);
-
-	start_execution(&execution_context);	
-
-	//decode_and_print_from(file_handle, execution_start_address, -1);
+	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database, ppu);
+	if(argc == 3 )
+		start_execution(&execution_context);	
+	else{
+		unsigned int address;
+		sscanf(argv[3], "%i", &address);
+		INFO_LOG("Address decompiling at = %x\n", address);	
+		decode_and_print_from(file_handle, execution_start_address - 0x8000 + address, -1);
+	}
+	destroy_ppu(ppu);
 	destroy_execution_area(execution_area);
 	unmap_file(file_handle);	
 	close_file(file_handle);

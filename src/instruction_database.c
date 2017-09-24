@@ -128,7 +128,10 @@ void* find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opc
 #define IMAGE_REL_AMD64_ADDR32 0x2
 long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opcode, int arg) {
 	char arg_string[30];
-	sprintf(arg_string, "__arg_%02x_%01x", opcode, arg);
+	if(arg!=-1)
+		sprintf(arg_string, "__arg_%02x_%01x", opcode, arg);		
+	else
+		sprintf(arg_string, "__arg_%02x_p", opcode);
 	int i = 0;
 	char* symbol_table_address = instruction_database->symbol_table_address;
 	char* string_table_address = instruction_database->string_table_address;

@@ -27,7 +27,6 @@ start_execution:
 	movq	0x20(%rdi), %r14	
 	movq	0x28(%rdi), %r15
 	movq	0x30(%rdi), %rbx
-
 	jmpq	*%rax
 
 
@@ -37,14 +36,53 @@ basic_block_end:
 	movq	%r10, (%rdi)
 	movq	%r11, 0x8(%rdi)
 	movq	%rsi, -16(%rbp)
-
 	call 	print_next_address
 	movq	-8(%rbp), %rdi
 	movq	-16(%rbp), %rsi
 	
 	callq	get_execution_address
 	movq	-8(%rbp), %rdi
+	movq	(%rdi), %r10
 	movq	0x8(%rdi), %r11
-	movq	0x10(%rdi), %r12
-	
+	#movq	0x10(%rdi), %r12
 	jmpq	*%rax
+
+	.text
+	.globl	read_non_ram_address
+read_non_ram_address:
+	movq	%rcx, %rsi
+	pushq	%rcx
+	movq	%r10, (%rdi)
+	movq	%r11, 0x8(%rdi)	
+	callq	read_non_ram_address_internal
+	movq	-8(%rbp), %rdi
+	movq	(%rdi), %r10
+	movq	0x8(%rdi), %r11
+	popq	%rcx
+	
+	retq
+
+
+	.text
+	.globl	write_non_ram_address
+write_non_ram_address:
+	movq	%rcx, %rsi
+	pushq	%rcx
+	movq	%r10, (%rdi)
+	movq	%r11, 0x8(%rdi)	
+	movq	%rax, %rdx
+	callq	write_non_ram_address_internal
+	movq	-8(%rbp), %rdi
+	movq	(%rdi), %r10
+	movq	0x8(%rdi), %r11
+	popq	%rcx
+	retq
+
+
+
+	.data
+string1:
+	.asciz "Non ram read at address %x\n"
+string2:
+	.asciz "Non ram write at address %x\n"
+

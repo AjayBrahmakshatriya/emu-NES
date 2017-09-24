@@ -4,17 +4,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include "nes_decoder.h"
-
+#include "ppu.h"
 
 void intialize_emulation_vector(EMULATION_VECTOR *emulation_vector) {
 	emulation_vector->basic_block_end = basic_block_end;
+	emulation_vector->read_non_ram_address = read_non_ram_address;
+	emulation_vector->write_non_ram_address = write_non_ram_address;
 }
 
 
-void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_database) {
+void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_database, PPU *ppu) {
 	execution_context->file_handle = file_handle;
 	execution_context->execution_area = execution_area;
 	execution_context->instruction_database = instruction_database;
+	execution_context->ppu = ppu;
 	execution_context->registers.A = 0x0;
 	execution_context->registers.X = 0x0;
 	execution_context->registers.Y = 0x0;
@@ -26,7 +29,16 @@ void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HAN
 }
 
 
-
+void write_argument(EXECUTION_CONTEXT *execution_context, const NES_INSTRUCTION *decoded_instruction, int opcode, int arg_n, char* virtual_address_assigned, unsigned int argument, unsigned short argument_size){
+	long long offset; 
+	offset = find_arg_location(execution_context->instruction_database, opcode, arg_n);
+	if(offset < 0){
+		if(arg_n!=-1)
+			WARN_LOG("Arg %d not found for %s %s\n",arg_n, decoded_instruction->name, AM_names[decoded_instruction->addressing_mode]);
+	}else{
+		memcpy(virtual_address_assigned + offset, &argument, argument_size);
+	}
+}
 void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long long address) {
 	INFO_LOG("Translating BB at = %4x\n", (int)address);
 	size_t translated = 0;
@@ -55,34 +67,55 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 		long long offset;
 		switch(decoded_instruction->addressing_mode) {
 			case AM_abs:
-				offset = find_arg_location(execution_context->instruction_database, opcode, 0);
-				if(offset < 0){
-					WARN_LOG("Arg 0 not found for %s %s\n", decoded_instruction->name, AM_names[decoded_instruction->addressing_mode]);
-				}else{
-					memcpy(virtual_address_assigned + offset, &argument, 2);
-				}
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 2);	
 				break;
 			case AM_A:
+				break;
 			case AM_abs_X:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 2);	
+				break;
 			case AM_abs_Y:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 2);
+				break;	
 			case AM_hash:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_impl:
+				break;
 			case AM_ind:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 2);
+				break;
 			case AM_X_ind:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_ind_Y:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_rel:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_zpg:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_zpg_X:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
+				break;
 			case AM_zpg_Y:
+				write_argument(execution_context, decoded_instruction, opcode, 0, virtual_address_assigned, argument, 1);
 				break;
 			default:
 				ERROR_LOG("Invalid addressing mode = %d\n", decoded_instruction->addressing_mode);
  
 		}
+		write_argument(execution_context, decoded_instruction, opcode, -1, virtual_address_assigned, address+translated+size, 2);
 
 		execution_context->execution_area->address_map->address_map[address+translated] = virtual_address_assigned;
 		translated += size;
 		to_decode_address += size;
+
+		//virtual_address_assigned = allocate_address(execution_context->execution_area, 0x1);
+		//*(unsigned char*)virtual_address_assigned = 0xcc;
+
 		if(is_bb_end_opcode(opcode))
 			break;
 	} 
@@ -91,12 +124,33 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 }
 
 void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long long address) {
+
 	if (execution_context->execution_area->address_map->address_map[address] != NULL)
 		return execution_context->execution_area->address_map->address_map[address];
 	void* return_address = generate_basic_block(execution_context, address);
 	return return_address;
 }
 void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long next_address) {
-	INFO_LOG("Execution continuing to = 0x%04x\n", (int)next_address);
+	INFO_LOG("Execution continuing to = 0x%llx\n", (next_address));
 	return;
+}
+unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address) {
+	if(address >= 0x2000 && address < 0x2008) {
+		return ppu_read(execution_context->ppu, address);
+	}else{
+		ERROR_LOG("Invalid non ram read on address = %x\n", address);
+		exit(-1);
+	}
+
+}
+void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address, unsigned char value) {	
+	if(address >= 0x2000 && address < 0x2008) {
+		ppu_write(execution_context->ppu, address, value);
+	}else if((address >=0x4000 && address < 0x4014) || address == 0x4015 || address == 0x4017){
+		// These are IO for APU. We will ignore for now
+	}
+	else{
+		ERROR_LOG("Invalid non ram write on address = %x\n", address);
+		exit(-1);
+	}
 }

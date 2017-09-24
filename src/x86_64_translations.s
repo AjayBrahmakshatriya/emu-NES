@@ -19,35 +19,78 @@
 	.set NOT_CARRY,		0b11111110	
 
 	.macro	read_address
-	nop
+	testb	$1, 0x10000(%rbx, %rcx)
+	jz 1f
+	movzbq	(%rbx, %rcx), %rax
+	jmp	2f
+1:
+	movq	0x10(%r15), %rax
+	callq	*%rax
+2:
 	.endm
 
 	.macro	write_address
-	nop
+	testb	$1, 0x10000(%rbx, %rcx)
+	jz	1f
+	movb	%al, (%rbx, %rcx)
+	jmp	2f
+1:
+	movq	0x18(%r15), %r8
+	callq	*%r8
+2:
+
 	.endm
 
 	.macro	set_N
-	nop
+	pushf
+	jnb	1f
+	andb	$NOT_NEGATIVE, %r14b
+	jmp	2f
+1:
+	orb	$NEGATIVE, %r14b
+2:
+	popf	
 	.endm
 
 	.macro	set_Z
-	nop
+	pushf
+	jz	1f
+	andb	$NOT_ZERO, %r14b
+	jmp	2f
+1:
+	orb	$ZERO, %r14b
+2:
+	popf
 	.endm
 
 	.macro	set_C
-	nop
+	pushf
+	jc	1f
+	andb	$NOT_CARRY, %r14b
+	jmp	2f
+1:
+	orb	$CARRY, %r14b
+2:
+	popf
 	.endm
 
 	.macro	set_V
-	nop
+	pushf
+	jo	1f
+	andb	$OVERFLOW, %r14b
+	jmp	2f
+1:
+	orb	$CARRY, %r14b
+2:
+	popf
 	.endm
 
 	
 	.macro	read_indirect_X
 	addb	%r11b, %cl
-	movb	(%rbx, %rcx), %r9b
+	movzbq	(%rbx, %rcx), %r9
 	incb	%cl
-	movb	(%rbx, %rcx), %cl
+	movzbq	(%rbx, %rcx), %rcx
 	shlq	$8, %rcx
 	orq	%r9, %rcx
 	read_address
@@ -55,18 +98,18 @@
 
 	.macro	write_indirect_X
 	addb	%r11b, %cl
-	movb	(%rbx, %rcx), %r9b
+	movzbq	(%rbx, %rcx), %r9
 	incb	%cl
-	movb	(%rbx, %rcx), %cl
+	movzbq	(%rbx, %rcx), %rcx
 	shlq	$8, %rcx
 	orq	%r9, %rcx
 	write_address
 	.endm
 
 	.macro	read_indirect_Y
-	movb	(%rbx, %rcx), %r8b
+	movzbq	(%rbx, %rcx), %r8
 	incb	%cl
-	movb	(%rbx, %rcx), %r9b
+	movzbq	(%rbx, %rcx), %r9
 	shlq	$8, %r9
 	orq	%r9, %r8
 	leaq	(%r8, %r12), %rcx	
@@ -74,9 +117,9 @@
 	.endm
 
 	.macro	write_indirect_Y
-	movb	(%rbx, %rcx), %r8b
+	movzbq	(%rbx, %rcx), %r8
 	incb	%cl
-	movb	(%rbx, %rcx), %r9b
+	movzbq	(%rbx, %rcx), %r9
 	shlq	$8, %r9
 	orq	%r9, %r8
 	leaq	(%r8, %r12), %rcx	
@@ -85,25 +128,25 @@
 
 	.macro	read_zpg_X
 	leaq	(%r11, %rcx), %rax
-	movb	%al, %al
+	movzbq	%al, %rax
 	movb	(%rbx, %rax), %al
 	.endm
 
 	.macro	write_zpg_X
 	leaq	(%r11, %rcx), %r8
-	movb	%r8b, %r8b
+	movzbq	%r8b, %r8
 	movb	%al, (%rbx, %r8)
 	.endm
 
 	.macro	write_zpg_Y
 	leaq	(%r12, %rcx), %r8
-	movb	%r8b, %r8b
+	movzbq	%r8b, %r8
 	movb	%al, (%rbx, %r8)
 	.endm
 
 	.macro	read_zpg_Y
 	leaq	(%r12, %rcx), %rax
-	movb	%al, %al
+	movzbq	%al, %rax
 	movb	(%rbx, %rax), %al
 	.endm
 
@@ -116,7 +159,7 @@
 	.endm
 	
 	.macro	read_zpg
-	movb	(%rbx, %rcx),  %al
+	movzbq	(%rbx, %rcx),  %rax
 	.endm
 
 	.macro	write_zpg
@@ -261,7 +304,7 @@ NES_INSTRUCTION_0x10:
 	movq	$__arg_10_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_10_end:
@@ -410,10 +453,10 @@ NES_INSTRUCTION_0x26:
 	read_zpg
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rclb	$1, %al
@@ -442,10 +485,10 @@ NES_INSTRUCTION_0x29:
 NES_INSTRUCTION_0x2a:
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rclb	$1, %r10b
@@ -483,10 +526,10 @@ NES_INSTRUCTION_0x2e:
 	read_abs
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rclb	$1, %al
@@ -508,7 +551,7 @@ NES_INSTRUCTION_0x30:
 	movq	$__arg_30_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_30_end:
@@ -548,10 +591,10 @@ NES_INSTRUCTION_0x36:
 	read_zpg_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rclb	$1, %al
@@ -604,10 +647,10 @@ NES_INSTRUCTION_0x3e:
 	read_abs_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rclb	$1, %al
@@ -623,7 +666,7 @@ NES_INSTRUCTION_0x3f:
 	.globl NES_INSTRUCTION_0x40
 NES_INSTRUCTION_0x40:
 	movb	0x102(%rbx, %r13), %r14b
-	movw	0x100(%rbx, %r13), %si
+	movzwq	0x100(%rbx, %r13), %rsi
 	addb	$3, %r13b
 	movq	(%r15), %rax
 	jmpq	*%rax
@@ -730,7 +773,7 @@ NES_INSTRUCTION_0x50:
 	movq	$__arg_50_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_50_end:
@@ -837,10 +880,10 @@ NES_INSTRUCTION_0x61:
 	read_indirect_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -868,10 +911,10 @@ NES_INSTRUCTION_0x65:
 	read_zpg
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -886,10 +929,10 @@ NES_INSTRUCTION_0x66:
 	read_zpg
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rcrb	$1, %al
@@ -914,10 +957,10 @@ NES_INSTRUCTION_0x69:
 	movq	$__arg_69_0, %rcx
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%cl, %r10b
@@ -930,10 +973,10 @@ NES_INSTRUCTION_0x69:
 NES_INSTRUCTION_0x6a:
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rcrb	$1, %r10b
@@ -958,10 +1001,10 @@ NES_INSTRUCTION_0x6d:
 	read_abs
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -976,10 +1019,10 @@ NES_INSTRUCTION_0x6e:
 	read_abs
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	mov	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	mov	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rcrb	$1, %al
@@ -1002,7 +1045,7 @@ NES_INSTRUCTION_0x70:
 	movq	$__arg_70_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_70_end:
@@ -1014,10 +1057,10 @@ NES_INSTRUCTION_0x71:
 	read_indirect_Y
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -1044,10 +1087,10 @@ NES_INSTRUCTION_0x75:
 	read_zpg_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -1062,10 +1105,10 @@ NES_INSTRUCTION_0x76:
 	read_zpg_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rcrb	$1, %al
@@ -1088,10 +1131,10 @@ NES_INSTRUCTION_0x79:
 	read_abs_Y
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -1118,10 +1161,10 @@ NES_INSTRUCTION_0x7d:
 	read_abs_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	adcb	%al, %r10b
@@ -1136,10 +1179,10 @@ NES_INSTRUCTION_0x7e:
 	read_abs_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movq	$1, %r8
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movq	$0, %r8
 2:
 	rcrb	$1, %r8b
 	rcrb	$1, %al
@@ -1245,7 +1288,7 @@ NES_INSTRUCTION_0x90:
 	movq	$__arg_90_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_90_end:
@@ -1456,7 +1499,7 @@ NES_INSTRUCTION_0xb0:
 	movq	$__arg_b0_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_b0_end:
@@ -1631,9 +1674,11 @@ NES_INSTRUCTION_0xc7:
 
 	.globl NES_INSTRUCTION_0xc8
 NES_INSTRUCTION_0xc8:
+	#int	$3
 	incb	%r12b
 	set_N
 	set_Z
+	
 
 	.globl NES_INSTRUCTION_0xc9
 NES_INSTRUCTION_0xc9:
@@ -1693,7 +1738,7 @@ NES_INSTRUCTION_0xd0:
 	movq	$__arg_d0_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_d0_end:
@@ -1948,7 +1993,7 @@ NES_INSTRUCTION_0xf0:
 	movq	$__arg_f0_p, %rdx
 	movsx	%cl, %cx
 	addw	%cx, %dx
-	leaq	(%rbx, %rdx), %rsi
+	movq	%rdx, %rsi
 	movq	(%r15), %rax	
 	jmpq	*%rax
 inst_f0_end:

@@ -20,7 +20,7 @@ EXECUTION_AREA* create_execution_area(void* base_address){
 		return NULL;	
 	}
 	int i;
-	for (i = 0; i< 256; i++)
+	for (i = 0; i< 0x10000; i++)
 		execution_area->address_map->address_map[i] = NULL;
 	return execution_area;
 }
