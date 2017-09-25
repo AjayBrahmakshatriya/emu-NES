@@ -2128,3 +2128,19 @@ NES_INSTRUCTION_0xfe:
 NES_INSTRUCTION_0xff:
 	nop
 
+
+	.globl NES_TEST_PPU_EVENT
+NES_TEST_PPU_EVENT:
+	movq	$__arg_pe_0, %rax
+	subq	%rax, 0x78(%rdi) 
+	ja	1f
+	movq	$__arg_pe_p, %rsi
+	movq	0x20(%r15), %rax
+	jmpq	*%rax
+1:
+
+	.globl NES_TEST_PPU_EVENT_END
+NES_TEST_PPU_EVENT_END:
+	nop
+	
+

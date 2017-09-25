@@ -44,7 +44,6 @@ basic_block_end:
 	movq	-8(%rbp), %rdi
 	movq	(%rdi), %r10
 	movq	0x8(%rdi), %r11
-	#movq	0x10(%rdi), %r12
 	jmpq	*%rax
 
 	.text
@@ -78,8 +77,22 @@ write_non_ram_address:
 	popq	%rcx
 	retq
 
+	.text	
+	.globl	ppu_event
+ppu_event:
+	movq	%r10, (%rdi)
+	movq	%r11, 0x8(%rdi)
+	movq	%r13, 0x18(%rdi)
+	callq	ppu_event_internal
+	movq	-8(%rbp), %rdi
+	movq	(%rdi), %r10
+	movq	0x18(%rdi), %r13
+	movq	%rax, %rsi
+	jmp	basic_block_end
+	
 
 
+	
 	.data
 string1:
 	.asciz "Non ram read at address %x\n"

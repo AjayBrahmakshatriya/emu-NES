@@ -98,6 +98,8 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 	instruction_database->text_section_address = text_section_address;
 	instruction_database->text_relocation_address = text_relocation_address;
 	instruction_database->text_relocation_count = text_relocation_count;
+	void * ppu_event_test_end=NULL;
+	instruction_database->ppu_event_test = NULL;
 	INFO_LOG("%d relocations found at address = %p (%x)\n", text_relocation_count, text_relocation_address, (unsigned int)(text_relocation_address - base_address));
 	for(i = 0; i<256; i++)
 		instruction_database->instruction_translation_start[i] = NULL;
@@ -109,13 +111,25 @@ INSTRUCTION_DATABASE *create_database(char* filename) {
 		if(sscanf(symbol_name, "NES_INSTRUCTION_0x%2x", &opcode) == 1){
 			void* instruction_address = text_section_address + *(unsigned int*) (header_address + 8);
 			instruction_database->instruction_translation_start[opcode] = instruction_address;
-		} 
+		}else if(strcmp(symbol_name, "NES_TEST_PPU_EVENT") == 0) {
+			void* instruction_address = text_section_address + *(unsigned int*) (header_address + 8);
+			instruction_database->ppu_event_test = instruction_address;
+		}else if(strcmp(symbol_name, "NES_TEST_PPU_EVENT_END") == 0) {	
+			void* instruction_address = text_section_address + *(unsigned int*) (header_address + 8);
+			ppu_event_test_end = instruction_address;
+		}
 	}
 	for(i=0;i<256;i++){
 		if(instruction_database->instruction_translation_start[i] == NULL){
 			ERROR_LOG("No address resolved for opcode %x in database\n", i);
 			return NULL;
 		}
+	}
+	if (instruction_database->ppu_event_test == NULL || ppu_event_test_end == NULL) {
+			ERROR_LOG("No address resolved for NES_TEST_PPU_EVENT\n");
+			return NULL;
+	}else{
+		instruction_database->ppu_event_test_size = ppu_event_test_end - instruction_database->ppu_event_test;
 	}
 	return instruction_database;
 }
@@ -127,11 +141,21 @@ void* find_instruction_start(INSTRUCTION_DATABASE *instruction_database, int opc
 
 #define IMAGE_REL_AMD64_ADDR32 0x2
 long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opcode, int arg) {
+	char opcode_str[3];
+
+	if (opcode < 256) 
+		sprintf(opcode_str, "%02x", opcode);
+	else if(opcode == 256)
+		sprintf(opcode_str, "pe");
+	else{
+		ERROR_LOG("Invalid opcode for finding args\n");
+		return -1;
+	}
 	char arg_string[30];
 	if(arg!=-1)
-		sprintf(arg_string, "__arg_%02x_%01x", opcode, arg);		
+		sprintf(arg_string, "__arg_%s_%01x", opcode_str, arg);		
 	else
-		sprintf(arg_string, "__arg_%02x_p", opcode);
+		sprintf(arg_string, "__arg_%s_p", opcode_str);
 	int i = 0;
 	char* symbol_table_address = instruction_database->symbol_table_address;
 	char* string_table_address = instruction_database->string_table_address;
@@ -144,8 +168,11 @@ long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opco
 			int symbol_table_index = *(unsigned int*)(header_address + 4);
 			get_name_for_symbol(symbol_name, symbol_table_address, symbol_table_index, string_table_address);
 			if(strcmp(symbol_name, arg_string) == 0){
-				int RVA = *(unsigned int*)header_address;	
-				return RVA - ((char*)instruction_database->instruction_translation_start[opcode] - instruction_database->text_section_address);
+				int RVA = *(unsigned int*)header_address;
+				if (opcode < 256)	
+					return RVA - ((char*)instruction_database->instruction_translation_start[opcode] - instruction_database->text_section_address);
+				else if(opcode == 256) 
+					return RVA - ((char*) instruction_database->ppu_event_test - instruction_database->text_section_address);
 			}	
 			
 		}	

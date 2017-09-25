@@ -18,6 +18,20 @@ PPU *create_ppu(void) {
 	ppu->reg_ppustatus = 0;
 	return ppu;	
 }
+
+void reset_ppu(PPU *ppu) {
+	ppu->address_write_flag = 0;
+	ppu->scroll_write_flag = 0;
+	ppu->reg_ppustatus = 0 | STATUS_VERTICAL_BLANK;
+	ppu->state = VERTICAL_BLANK;
+	ppu->execution_context->cycles_to_ppu_event = CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK]; 
+}
+
+void ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address) {
+	INFO_LOG("End of state %d triggered\n", execution_context->ppu->state);
+	exit(0);
+}
+
 int destroy_ppu(PPU *ppu) {
 	if(!ppu)
 		return -1;

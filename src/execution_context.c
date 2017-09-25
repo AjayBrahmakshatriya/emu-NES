@@ -10,6 +10,7 @@ void intialize_emulation_vector(EMULATION_VECTOR *emulation_vector) {
 	emulation_vector->basic_block_end = basic_block_end;
 	emulation_vector->read_non_ram_address = read_non_ram_address;
 	emulation_vector->write_non_ram_address = write_non_ram_address;
+	emulation_vector->ppu_event = ppu_event;
 }
 
 
@@ -18,6 +19,8 @@ void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HAN
 	execution_context->execution_area = execution_area;
 	execution_context->instruction_database = instruction_database;
 	execution_context->ppu = ppu;
+	ppu->execution_context = execution_context;
+	reset_ppu(ppu);
 	execution_context->registers.A = 0x0;
 	execution_context->registers.X = 0x0;
 	execution_context->registers.Y = 0x0;
@@ -113,9 +116,10 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 		translated += size;
 		to_decode_address += size;
 
-		//virtual_address_assigned = allocate_address(execution_context->execution_area, 0x1);
-		//*(unsigned char*)virtual_address_assigned = 0xcc;
-
+		virtual_address_assigned = allocate_address(execution_context->execution_area, execution_context->instruction_database->ppu_event_test_size);
+		memcpy(virtual_address_assigned, execution_context->instruction_database->ppu_event_test, execution_context->instruction_database->ppu_event_test_size);
+		write_argument(execution_context, decoded_instruction, 256, 0, virtual_address_assigned, decoded_instruction->base_cycles * 3, 1);
+		write_argument(execution_context, decoded_instruction, 256, -1, virtual_address_assigned, address+translated+size, 2);
 		if(is_bb_end_opcode(opcode))
 			break;
 	} 
@@ -124,7 +128,6 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 }
 
 void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long long address) {
-
 	if (execution_context->execution_area->address_map->address_map[address] != NULL)
 		return execution_context->execution_area->address_map->address_map[address];
 	void* return_address = generate_basic_block(execution_context, address);

@@ -17,17 +17,33 @@
 #define __read__
 #define __write__
 
+
+
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
 
 
 typedef enum {
 	VERTICAL_BLANK = 0,
-	RENDERING = 1,
+	PRE_RENDER_SCANLINE = 1,
+	RENDERING = 2,
+	POST_RENDER_SCANLINE = 3
 }PPU_STATES;
 
 
+static int scan_lines[] = {20, 1, 240, 1};
+#define CYCLES_PER_SCANLINE 341
 
+#define STATUS_VERTICAL_BLANK		0b10000000
+#define STATUS_SPRITE0			0b01000000
+#define STATUS_SPRITE_OVERFLOW		0b00100000
+
+#define NOT_STATUS_VERTICAL_BLANK	0b01111111
+#define NOT_STATUS_SPRITE0		0b10111111
+#define NOT_STATUS_SPRITE_OVERFLOW	0b11011111
+
+struct _EXECUTION_CONTEXT;
+typedef struct _EXECUTION_CONTEXT EXECUTION_CONTEXT;
 typedef struct {
 	unsigned char *output_buffer;
 
@@ -46,7 +62,9 @@ typedef struct {
 	BYTE address_write_flag;
 
 	BYTE VRAM[0x2000];
-	BYTE OAM[0xFF];	
+	BYTE OAM[0xFF];
+	EXECUTION_CONTEXT *execution_context;
+	PPU_STATES state;	
 }PPU;
 
 
@@ -56,5 +74,7 @@ int destroy_ppu(PPU* ppu);
 BYTE ppu_read(PPU* ppu, WORD address);
 void ppu_write(PPU* ppu, WORD address, BYTE data);
 
+void reset_ppu(PPU *ppu);
 
+void ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address);
 #endif

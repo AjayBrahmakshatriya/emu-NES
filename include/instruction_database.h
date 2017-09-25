@@ -14,6 +14,8 @@ typedef struct {
 	char* text_section_address;
 	char* text_relocation_address;
 	int text_relocation_count;
+	void* ppu_event_test;
+	int ppu_event_test_size;
 	
 } INSTRUCTION_DATABASE;
 

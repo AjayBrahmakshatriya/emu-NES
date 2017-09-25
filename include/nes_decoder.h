@@ -51,6 +51,7 @@ static const char * const AM_names[] = {
 typedef struct {
 	const char* name;
 	NES_ADDRESSING_MODE addressing_mode;	
+	int base_cycles;
 } NES_INSTRUCTION;
 
 extern NES_INSTRUCTION nes_instructions[256];
