@@ -43,7 +43,7 @@
 
 	.macro	set_N
 	pushf
-	jnb	1f
+	js	1f
 	andb	$NOT_NEGATIVE, %r14b
 	jmp	2f
 1:

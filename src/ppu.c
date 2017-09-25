@@ -15,8 +15,8 @@ PPU *create_ppu(void) {
 	ppu->output_buffer = malloc(256 * 254 * 3);
 	ppu->address_write_flag = 0;
 	ppu->scroll_write_flag = 0;
-
-	return ppu;
+	ppu->reg_ppustatus = 0;
+	return ppu;	
 }
 int destroy_ppu(PPU *ppu) {
 	if(!ppu)
@@ -37,6 +37,8 @@ void write_ppumask(PPU *ppu, BYTE mask) {
 BYTE read_ppustatus(PPU *ppu) {
 	ppu->scroll_write_flag = 0;
 	ppu->address_write_flag = 0;
+	BYTE return_val = ppu->reg_ppustatus;
+	ppu->reg_ppustatus = 0;
 	return ppu->reg_ppustatus;
 }
 
