@@ -43,7 +43,6 @@ static int scan_lines[] = {20, 1, 240, 1};
 #define NOT_STATUS_SPRITE_OVERFLOW	0b11011111
 
 struct _EXECUTION_CONTEXT;
-typedef struct _EXECUTION_CONTEXT EXECUTION_CONTEXT;
 typedef struct {
 	unsigned char *output_buffer;
 
@@ -61,9 +60,9 @@ typedef struct {
 	BYTE reg_address_lower;
 	BYTE address_write_flag;
 
-	BYTE VRAM[0x2000];
+	BYTE VRAM[0x1000];
 	BYTE OAM[0xFF];
-	EXECUTION_CONTEXT *execution_context;
+	struct _EXECUTION_CONTEXT *execution_context;
 	PPU_STATES state;	
 }PPU;
 
@@ -76,5 +75,5 @@ void ppu_write(PPU* ppu, WORD address, BYTE data);
 
 void reset_ppu(PPU *ppu);
 
-void ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address);
+WORD ppu_event_internal(struct _EXECUTION_CONTEXT *execution_context, WORD next_address);
 #endif

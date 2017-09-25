@@ -152,10 +152,16 @@ long long find_arg_location(INSTRUCTION_DATABASE *instruction_database, int opco
 		return -1;
 	}
 	char arg_string[30];
-	if(arg!=-1)
+	if(arg>=0)
 		sprintf(arg_string, "__arg_%s_%01x", opcode_str, arg);		
-	else
+	else if(arg == -1)
 		sprintf(arg_string, "__arg_%s_p", opcode_str);
+	else if(arg == -2)
+		sprintf(arg_string, "__arg_%s_s", opcode_str);
+	else{
+		ERROR_LOG("Invalid argument number\n");
+		return -1;
+	}
 	int i = 0;
 	char* symbol_table_address = instruction_database->symbol_table_address;
 	char* string_table_address = instruction_database->string_table_address;

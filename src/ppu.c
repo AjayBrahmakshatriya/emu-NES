@@ -3,8 +3,6 @@
 #include "log_messages.h"
 
 
-
-
 PPU *create_ppu(void) {
 	PPU *ppu = malloc(sizeof(PPU));
 	if(!ppu){
@@ -27,9 +25,33 @@ void reset_ppu(PPU *ppu) {
 	ppu->execution_context->cycles_to_ppu_event = CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK]; 
 }
 
-void ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address) {
+WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address) {
 	INFO_LOG("End of state %d triggered\n", execution_context->ppu->state);
-	exit(0);
+	switch(execution_context->ppu->state) {
+		case VERTICAL_BLANK:
+			execution_context->ppu->state = PRE_RENDER_SCANLINE;
+			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[PRE_RENDER_SCANLINE];
+			execution_context->ppu->reg_ppustatus &= NOT_STATUS_VERTICAL_BLANK;
+			break;
+		case PRE_RENDER_SCANLINE:
+			execution_context->ppu->state = RENDERING;
+			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[RENDERING];
+			break;
+		case RENDERING:
+			execution_context->ppu->state = POST_RENDER_SCANLINE;
+			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[POST_RENDER_SCANLINE];
+			execution_context->ppu->reg_ppustatus |= STATUS_VERTICAL_BLANK;
+			break;
+		case POST_RENDER_SCANLINE:
+			execution_context->ppu->state = VERTICAL_BLANK;
+			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK];
+			break;
+		default:
+			ERROR_LOG("Invalid state for ppu\n");
+			exit(-1);
+	}
+	INFO_LOG("Returning next_address from ppu_event = %04x\n", next_address);
+	return next_address;
 }
 
 int destroy_ppu(PPU *ppu) {
@@ -53,7 +75,7 @@ BYTE read_ppustatus(PPU *ppu) {
 	ppu->address_write_flag = 0;
 	BYTE return_val = ppu->reg_ppustatus;
 	ppu->reg_ppustatus = 0;
-	return ppu->reg_ppustatus;
+	return return_val;
 }
 
 void write_oamaddress(PPU *ppu, BYTE address) {
@@ -92,7 +114,7 @@ void write_ppuaddress(PPU *ppu, BYTE address) {
 
 void write_ppudata(PPU *ppu, BYTE data) {
 	INFO_LOG("Writing to PPU address = %x\n", (ppu->reg_address_upper << 8) | ppu->reg_address_lower);
-	ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower] = data;
+	ppu->VRAM[0x2000 + (ppu->reg_address_upper << 8) | ppu->reg_address_lower] = data;
 	ppu->reg_address_lower++;
 	if(ppu->reg_address_lower == 0x00)
 		ppu->reg_address_upper++;
@@ -100,7 +122,7 @@ void write_ppudata(PPU *ppu, BYTE data) {
 
 
 BYTE read_ppudata(PPU *ppu) {
-	return ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower];
+	return ppu->VRAM[0x2000 + (ppu->reg_address_upper << 8) | ppu->reg_address_lower];
 }
 
 

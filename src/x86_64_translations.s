@@ -74,6 +74,18 @@
 	popf
 	.endm
 
+	.macro set_SC
+	pushf
+	jnc	1f
+	andb	$NOT_CARRY, %r14b
+	jmp	2f
+1:
+	orb	$CARRY, %r14b
+2:
+	popf
+	.endm
+
+
 	.macro	set_V
 	pushf
 	jo	1f
@@ -873,7 +885,7 @@ NES_INSTRUCTION_0x60:
 	incw	%si
 	movq	(%r15), %rax
 	jmpq	*%rax
-
+	
 	.globl NES_INSTRUCTION_0x61
 NES_INSTRUCTION_0x61:
 	movq	$__arg_61_0, %rcx
@@ -1618,7 +1630,7 @@ NES_INSTRUCTION_0xc0:
 	cmpb	%al, %r12b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xc1
 NES_INSTRUCTION_0xc1:
@@ -1627,7 +1639,7 @@ NES_INSTRUCTION_0xc1:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 
 	.globl NES_INSTRUCTION_0xc2
@@ -1645,7 +1657,7 @@ NES_INSTRUCTION_0xc4:
 	cmpb	%al, %r12b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 
 	.globl NES_INSTRUCTION_0xc5
@@ -1655,7 +1667,7 @@ NES_INSTRUCTION_0xc5:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 
 	.globl NES_INSTRUCTION_0xc6
@@ -1686,7 +1698,7 @@ NES_INSTRUCTION_0xc9:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xca
 NES_INSTRUCTION_0xca:
@@ -1705,7 +1717,7 @@ NES_INSTRUCTION_0xcc:
 	cmpb	%al, %r12b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xcd
 NES_INSTRUCTION_0xcd:
@@ -1714,7 +1726,7 @@ NES_INSTRUCTION_0xcd:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xce
 NES_INSTRUCTION_0xce:
@@ -1751,7 +1763,7 @@ NES_INSTRUCTION_0xd1:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xd2
 NES_INSTRUCTION_0xd2:
@@ -1772,7 +1784,7 @@ NES_INSTRUCTION_0xd5:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xd6
 NES_INSTRUCTION_0xd6:
@@ -1798,7 +1810,7 @@ NES_INSTRUCTION_0xd9:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xda
 NES_INSTRUCTION_0xda:
@@ -1819,7 +1831,7 @@ NES_INSTRUCTION_0xdd:
 	cmpb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xde
 NES_INSTRUCTION_0xde:
@@ -1840,7 +1852,7 @@ NES_INSTRUCTION_0xe0:
 	cmpb	%al, %r11b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xe1
 NES_INSTRUCTION_0xe1:
@@ -1857,7 +1869,7 @@ NES_INSTRUCTION_0xe1:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 	
 
@@ -1876,7 +1888,7 @@ NES_INSTRUCTION_0xe4:
 	cmpb	%al, %r11b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xe5
 NES_INSTRUCTION_0xe5:
@@ -1893,7 +1905,7 @@ NES_INSTRUCTION_0xe5:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 
 
@@ -1931,7 +1943,7 @@ NES_INSTRUCTION_0xe9:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 	
 
@@ -1950,7 +1962,7 @@ NES_INSTRUCTION_0xec:
 	cmpb	%al, %r11b
 	set_N
 	set_Z
-	set_C
+	set_SC
 
 	.globl NES_INSTRUCTION_0xed
 NES_INSTRUCTION_0xed:
@@ -1967,7 +1979,7 @@ NES_INSTRUCTION_0xed:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 	
 
@@ -2014,7 +2026,7 @@ NES_INSTRUCTION_0xf1:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 	
 
@@ -2045,7 +2057,7 @@ NES_INSTRUCTION_0xf5:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 	
 
@@ -2082,7 +2094,7 @@ NES_INSTRUCTION_0xf9:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 
 	.globl NES_INSTRUCTION_0xfa
@@ -2112,7 +2124,7 @@ NES_INSTRUCTION_0xfd:
 	sbbb	%al, %r10b
 	set_N
 	set_Z
-	set_C
+	set_SC
 	set_V
 
 	.globl NES_INSTRUCTION_0xfe
@@ -2131,13 +2143,14 @@ NES_INSTRUCTION_0xff:
 
 	.globl NES_TEST_PPU_EVENT
 NES_TEST_PPU_EVENT:
-	movq	$__arg_pe_0, %rax
-	subq	%rax, 0x78(%rdi) 
-	ja	1f
-	movq	$__arg_pe_p, %rsi
+	movq	0x78(%rdi), %rax
+	testq	%rax, %rax
+	jg	1f	
+	movq	$__arg_pe_s, %rsi
 	movq	0x20(%r15), %rax
 	jmpq	*%rax
 1:
+	subq	$__arg_pe_0, 0x78(%rdi) 
 
 	.globl NES_TEST_PPU_EVENT_END
 NES_TEST_PPU_EVENT_END:

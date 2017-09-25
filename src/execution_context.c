@@ -43,7 +43,7 @@ void write_argument(EXECUTION_CONTEXT *execution_context, const NES_INSTRUCTION 
 	}
 }
 void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long long address) {
-	INFO_LOG("Translating BB at = %4x\n", (int)address);
+	INFO_LOG("Translating BB at = %04x\n", (int)address);
 	size_t translated = 0;
 	void *to_decode_address = translate_address_to_emulation_context(execution_context->file_handle, address);
 	const NES_INSTRUCTION *decoded_instruction = NULL;
@@ -56,6 +56,13 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 			ERROR_LOG("Invalid instruction (%x) at %p\n", opcode, to_decode_address);
 			return NULL;
 		}
+
+		void* virtual_address_assigned_test = allocate_address(execution_context->execution_area, execution_context->instruction_database->ppu_event_test_size);
+		memcpy(virtual_address_assigned_test, execution_context->instruction_database->ppu_event_test, execution_context->instruction_database->ppu_event_test_size);
+		write_argument(execution_context, decoded_instruction, 256, 0, virtual_address_assigned_test, decoded_instruction->base_cycles * 3, 1);
+		write_argument(execution_context, decoded_instruction, 256, -2, virtual_address_assigned_test, address+translated, 2);
+
+
 		void* start_address = find_instruction_start(execution_context->instruction_database, opcode);
 		void* end_address = find_instruction_start(execution_context->instruction_database, opcode+1);
 		if(start_address == NULL || end_address == NULL || (unsigned long long)start_address >= (unsigned long long)end_address){
@@ -112,17 +119,13 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 		}
 		write_argument(execution_context, decoded_instruction, opcode, -1, virtual_address_assigned, address+translated+size, 2);
 
-		execution_context->execution_area->address_map->address_map[address+translated] = virtual_address_assigned;
+		execution_context->execution_area->address_map->address_map[address+translated] = virtual_address_assigned_test;
 		translated += size;
 		to_decode_address += size;
 
-		virtual_address_assigned = allocate_address(execution_context->execution_area, execution_context->instruction_database->ppu_event_test_size);
-		memcpy(virtual_address_assigned, execution_context->instruction_database->ppu_event_test, execution_context->instruction_database->ppu_event_test_size);
-		write_argument(execution_context, decoded_instruction, 256, 0, virtual_address_assigned, decoded_instruction->base_cycles * 3, 1);
-		write_argument(execution_context, decoded_instruction, 256, -1, virtual_address_assigned, address+translated+size, 2);
 		if(is_bb_end_opcode(opcode))
 			break;
-	} 
+	}
 	return execution_context->execution_area->address_map->address_map[address];
 	
 }

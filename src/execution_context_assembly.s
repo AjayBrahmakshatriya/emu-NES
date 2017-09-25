@@ -33,18 +33,22 @@ start_execution:
 	.text
 	.globl	basic_block_end
 basic_block_end:
+	#cmpq	$1, %rsi
+	#je 1f	
 	movq	%r10, (%rdi)
 	movq	%r11, 0x8(%rdi)
 	movq	%rsi, -16(%rbp)
 	call 	print_next_address
 	movq	-8(%rbp), %rdi
 	movq	-16(%rbp), %rsi
-	
 	callq	get_execution_address
 	movq	-8(%rbp), %rdi
 	movq	(%rdi), %r10
 	movq	0x8(%rdi), %r11
 	jmpq	*%rax
+
+1:
+	int	$3
 
 	.text
 	.globl	read_non_ram_address
@@ -82,17 +86,15 @@ write_non_ram_address:
 ppu_event:
 	movq	%r10, (%rdi)
 	movq	%r11, 0x8(%rdi)
-	movq	%r13, 0x18(%rdi)
+	#movq	%r13, 0x18(%rdi)
 	callq	ppu_event_internal
 	movq	-8(%rbp), %rdi
+	#movq	0x18(%rdi), %r13
+	movq	0x8(%rdi), %r11
 	movq	(%rdi), %r10
-	movq	0x18(%rdi), %r13
 	movq	%rax, %rsi
-	jmp	basic_block_end
-	
+	jmp	basic_block_end	
 
-
-	
 	.data
 string1:
 	.asciz "Non ram read at address %x\n"

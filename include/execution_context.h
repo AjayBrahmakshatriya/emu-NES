@@ -34,7 +34,7 @@ typedef struct _EXECUTION_CONTEXT {
 	FILE_HANDLE *file_handle; 					// Offset 0x60
 	EXECUTION_AREA *execution_area; 				// Offset 0x68 
 	INSTRUCTION_DATABASE *instruction_database; 			// Offset 0x70
-	unsigned long long cycles_to_ppu_event; 			// Offset 0x78
+	long long cycles_to_ppu_event; 			// Offset 0x78
 	EMULATION_VECTOR emulation_vector;				// Offset 0x80
 	PPU *ppu;							// Offset 0x88
 }EXECUTION_CONTEXT;
