@@ -114,7 +114,7 @@ void write_ppuaddress(PPU *ppu, BYTE address) {
 
 void write_ppudata(PPU *ppu, BYTE data) {
 	INFO_LOG("Writing to PPU address = %x\n", (ppu->reg_address_upper << 8) | ppu->reg_address_lower);
-	ppu->VRAM[0x2000 + (ppu->reg_address_upper << 8) | ppu->reg_address_lower] = data;
+	ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower] = data;
 	ppu->reg_address_lower++;
 	if(ppu->reg_address_lower == 0x00)
 		ppu->reg_address_upper++;
@@ -122,7 +122,7 @@ void write_ppudata(PPU *ppu, BYTE data) {
 
 
 BYTE read_ppudata(PPU *ppu) {
-	return ppu->VRAM[0x2000 + (ppu->reg_address_upper << 8) | ppu->reg_address_lower];
+	return ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower];
 }
 
 

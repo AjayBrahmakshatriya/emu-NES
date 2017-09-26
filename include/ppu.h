@@ -60,7 +60,7 @@ typedef struct {
 	BYTE reg_address_lower;
 	BYTE address_write_flag;
 
-	BYTE VRAM[0x1000];
+	BYTE VRAM[0x4000];
 	BYTE OAM[0xFF];
 	struct _EXECUTION_CONTEXT *execution_context;
 	PPU_STATES state;	
