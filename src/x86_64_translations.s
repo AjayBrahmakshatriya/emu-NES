@@ -125,6 +125,10 @@
 	shlq	$8, %r9
 	orq	%r9, %r8
 	leaq	(%r8, %r12), %rcx
+	addb	%r12b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	read_address
 	.endm
 
@@ -135,6 +139,10 @@
 	shlq	$8, %r9
 	orq	%r9, %r8
 	leaq	(%r8, %r12), %rcx	
+	addb	%r12b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	write_address
 	.endm
 
@@ -180,25 +188,61 @@
 
 
 	.macro	read_abs_X
+	movb	%cl, %r8b
 	leaq	(%rcx, %r11), %rcx
+	addb	%r11b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	read_address
 	.endm
 
 	.macro	write_abs_X
+	movb	%cl, %r8b
 	leaq	(%rcx, %r11), %rcx
+	addb	%r11b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	write_address
 	.endm
 
 
 	.macro	read_abs_Y
+	movb	%cl, %r8b
 	leaq	(%rcx, %r12), %rcx
+	addb	%r12b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	read_address
 	.endm
 
 	.macro	write_abs_Y
+	movb	%cl, %r8b
 	leaq	(%rcx, %r12), %rcx
+	addb	%r12b, %r8b
+	jnc	1f
+	decq	0x78(%rdi)
+1:
 	write_address
 	.endm
+
+
+	.macro relative_branch	
+	movq	%rdx, %rax
+	movsx	%cl, %cx
+	addw	%cx, %dx
+	movq	%rdx, %rsi
+	cmpb	%ah, %dh
+	je	1f
+	decq	0x78(%rdi)
+1:
+	decq	0x78(%rdi)
+	movq	(%r15), %rax		
+	jmpq	*%rax
+	.endm
+	
 
 	.text
 	
@@ -314,11 +358,7 @@ NES_INSTRUCTION_0x10:
 	jnz	inst_10_end 
 	movq	$__arg_10_0, %rcx
 	movq	$__arg_10_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_10_end:
 	
 	.globl NES_INSTRUCTION_0x11
@@ -561,11 +601,7 @@ NES_INSTRUCTION_0x30:
 	jz	inst_30_end 
 	movq	$__arg_30_0, %rcx
 	movq	$__arg_30_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_30_end:
 
 	.globl NES_INSTRUCTION_0x31
@@ -783,11 +819,7 @@ NES_INSTRUCTION_0x50:
 	jnz	inst_50_end 
 	movq	$__arg_50_0, %rcx
 	movq	$__arg_50_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_50_end:
 
 	.globl NES_INSTRUCTION_0x51
@@ -1055,11 +1087,7 @@ NES_INSTRUCTION_0x70:
 	jnz	inst_70_end 
 	movq	$__arg_70_0, %rcx
 	movq	$__arg_70_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_70_end:
 	
 
@@ -1298,11 +1326,7 @@ NES_INSTRUCTION_0x90:
 	jnz	inst_90_end 
 	movq	$__arg_90_0, %rcx
 	movq	$__arg_90_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_90_end:
 
 	.globl NES_INSTRUCTION_0x91
@@ -1509,13 +1533,8 @@ NES_INSTRUCTION_0xb0:
 	jz	inst_b0_end 
 	movq	$__arg_b0_0, %rcx
 	movq	$__arg_b0_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_b0_end:
-	nop
 
 	.globl NES_INSTRUCTION_0xb1
 NES_INSTRUCTION_0xb1:
@@ -1748,11 +1767,7 @@ NES_INSTRUCTION_0xd0:
 	jnz	inst_d0_end 
 	movq	$__arg_d0_0, %rcx
 	movq	$__arg_d0_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_d0_end:
 	
 
@@ -2003,13 +2018,8 @@ NES_INSTRUCTION_0xf0:
 	jz	inst_f0_end 
 	movq	$__arg_f0_0, %rcx
 	movq	$__arg_f0_p, %rdx
-	movsx	%cl, %cx
-	addw	%cx, %dx
-	movq	%rdx, %rsi
-	movq	(%r15), %rax	
-	jmpq	*%rax
+	relative_branch
 inst_f0_end:
-	nop
 
 	.globl NES_INSTRUCTION_0xf1
 NES_INSTRUCTION_0xf1:
