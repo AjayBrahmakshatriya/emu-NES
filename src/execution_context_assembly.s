@@ -87,13 +87,31 @@ ppu_event:
 	movq	%r10, (%rdi)
 	movq	%r11, 0x8(%rdi)
 	#movq	%r13, 0x18(%rdi)
+	#movq	%r14, 0x20(%rdi)
 	callq	ppu_event_internal
 	movq	-8(%rbp), %rdi
+	#movq	0x20(%rdi), %r14
 	#movq	0x18(%rdi), %r13
 	movq	0x8(%rdi), %r11
 	movq	(%rdi), %r10
 	movq	%rax, %rsi
 	jmp	basic_block_end	
+
+	.text
+	.globl	nmi_trigger
+nmi_trigger:
+	movq	$0, 0x80(%rdi)
+	movq	$1, 0x88(%rdi)
+	subb	$3, %r13b
+	movb	%r14b, 0x102(%rbx, %r13)
+	movw	%si, 0x100(%rbx, %r13)
+	movw	0xfffa(%rbx), %si
+	subq	$7, 0x78(%rdi)
+	jmp	basic_block_end
+	
+	
+
+
 
 	.data
 string1:

@@ -25,6 +25,16 @@ void reset_ppu(PPU *ppu) {
 	ppu->execution_context->cycles_to_ppu_event = CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK]; 
 }
 
+/*
+void trigger_nmi(void) {
+	BYTE flags = (BYTE)ppu->execution_context->registers.SR;
+	BYTE stack_ptr = (BYTE)ppu->execution_context->registers.S;
+	stack_ptr--;
+	*(BYTE*)translate_address_to_emulation_context(ppu->execution_context->file_handle, (0x100+stack_ptr)) = flags;
+	stack_ptr-=2;
+	*(WORD*)translate_address_to_emulation_context(ppu->execution_context->file_handle, (0x100+stack_ptr)) = next_address;
+}
+*/
 WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address) {
 	INFO_LOG("End of state %d triggered\n", execution_context->ppu->state);
 	switch(execution_context->ppu->state) {
@@ -40,16 +50,22 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 		case RENDERING:
 			execution_context->ppu->state = POST_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[POST_RENDER_SCANLINE];
-			execution_context->ppu->reg_ppustatus |= STATUS_VERTICAL_BLANK;
 			break;
 		case POST_RENDER_SCANLINE:
 			execution_context->ppu->state = VERTICAL_BLANK;
 			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK];
+			execution_context->ppu->reg_ppustatus |= STATUS_VERTICAL_BLANK;
+
 			break;
 		default:
 			ERROR_LOG("Invalid state for ppu\n");
 			exit(-1);
 	}
+
+	if((execution_context->ppu->reg_ppuctrl & execution_context->ppu->reg_ppustatus & 0b10000000) && !execution_context->interrupts_disabled){
+		execution_context->nmi_flip_flop = 1;
+	}
+
 	INFO_LOG("Returning next_address from ppu_event = %04x\n", next_address);
 	return next_address;
 }
@@ -58,7 +74,6 @@ int destroy_ppu(PPU *ppu) {
 	if(!ppu)
 		return -1;
 	/* Code to destoy a PPU instance */
-
 	return 0;
 }
 
@@ -66,6 +81,9 @@ int destroy_ppu(PPU *ppu) {
 
 void write_ppuctrl(PPU* ppu, BYTE ctrl) {
 	ppu->reg_ppuctrl = ctrl;
+	if((ctrl & ppu->reg_ppustatus & 0b10000000) && !ppu->execution_context->interrupts_disabled){
+		ppu->execution_context->nmi_flip_flop = 1;
+	}
 }
 void write_ppumask(PPU *ppu, BYTE mask) {
 	ppu->reg_ppumask = mask;
@@ -114,10 +132,14 @@ void write_ppuaddress(PPU *ppu, BYTE address) {
 
 void write_ppudata(PPU *ppu, BYTE data) {
 	INFO_LOG("Writing to PPU address = %x\n", (ppu->reg_address_upper << 8) | ppu->reg_address_lower);
-	ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower] = data;
-	ppu->reg_address_lower++;
-	if(ppu->reg_address_lower == 0x00)
-		ppu->reg_address_upper++;
+	WORD address = (ppu->reg_address_upper << 8) | ppu->reg_address_lower;
+	ppu->VRAM[address] = data;
+	if(ppu->reg_ppuctrl & 0b100)
+		address += 32;
+	else
+		address++;
+	ppu->reg_address_lower = address & 0xff;
+	ppu->reg_address_upper = (address >> 8);
 }
 
 
@@ -145,6 +167,7 @@ void ppu_write(PPU *ppu, WORD address, BYTE data) {
 		case PPUSCROLL:	write_ppuscroll(ppu, data); break;
 		case PPUADDR:	write_ppuaddress(ppu, data); break;
 		case PPUDATA:	write_ppudata(ppu, data); break;
+		case OAMDMA:	printf("Write to DMA port\n"); break;
 		default:
 			ERROR_LOG("Invalid write on PPU at address = %x\n", address);
 			return;

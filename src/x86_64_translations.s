@@ -716,6 +716,7 @@ NES_INSTRUCTION_0x40:
 	movb	0x102(%rbx, %r13), %r14b
 	movzwq	0x100(%rbx, %r13), %rsi
 	addb	$3, %r13b
+	movq	$0, 0x88(%rdi)
 	movq	(%r15), %rax
 	jmpq	*%rax
 
@@ -1540,8 +1541,8 @@ inst_b0_end:
 NES_INSTRUCTION_0xb1:
 	movq	$__arg_b1_0, %rcx
 	read_indirect_Y
-	movb	%al, %r12b
-	testb	%r12b, %r12b
+	movb	%al, %r10b
+	testb	%r10b, %r10b
 	set_N
 	set_Z
 
@@ -2153,13 +2154,20 @@ NES_INSTRUCTION_0xff:
 
 	.globl NES_TEST_PPU_EVENT
 NES_TEST_PPU_EVENT:
+	movq	$__arg_pe_s, %rsi
 	movq	0x78(%rdi), %rax
 	testq	%rax, %rax
 	jg	1f	
-	movq	$__arg_pe_s, %rsi
 	movq	0x20(%r15), %rax
 	jmpq	*%rax
 1:
+	movq	0x80(%rdi), %rax
+	testq	%rax, %rax
+	jz	2f
+	movq	0x28(%r15), %rax
+	jmpq	*%rax	
+2:
+
 	subq	$__arg_pe_0, 0x78(%rdi) 
 
 	.globl NES_TEST_PPU_EVENT_END

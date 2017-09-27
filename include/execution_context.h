@@ -12,6 +12,7 @@ typedef struct {
 	void (*read_non_ram_address)(void);				// Offset 0x10
 	void (*write_non_ram_address)(void);				// Offset 0x18
 	void (*ppu_event)(void);					// Offset 0x20
+	void (*nmi_trigger)(void);					// Offset 0x28
 }EMULATION_VECTOR;
 
 typedef struct {
@@ -34,9 +35,11 @@ typedef struct _EXECUTION_CONTEXT {
 	FILE_HANDLE *file_handle; 					// Offset 0x60
 	EXECUTION_AREA *execution_area; 				// Offset 0x68 
 	INSTRUCTION_DATABASE *instruction_database; 			// Offset 0x70
-	long long cycles_to_ppu_event; 			// Offset 0x78
-	EMULATION_VECTOR emulation_vector;				// Offset 0x80
-	PPU *ppu;							// Offset 0x88
+	long long cycles_to_ppu_event; 					// Offset 0x78
+	unsigned long long nmi_flip_flop;				// Offset 0x80
+	unsigned long long interrupts_disabled;				// Offset 0x88
+	EMULATION_VECTOR emulation_vector;
+	PPU *ppu;
 }EXECUTION_CONTEXT;
 
 
@@ -57,5 +60,5 @@ void basic_block_end(void);
 void read_non_ram_address(void);
 void write_non_ram_address(void);
 void ppu_event(void);
-
+void nmi_trigger(void);
 #endif

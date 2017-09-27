@@ -11,6 +11,7 @@ void intialize_emulation_vector(EMULATION_VECTOR *emulation_vector) {
 	emulation_vector->read_non_ram_address = read_non_ram_address;
 	emulation_vector->write_non_ram_address = write_non_ram_address;
 	emulation_vector->ppu_event = ppu_event;
+	emulation_vector->nmi_trigger = nmi_trigger;
 }
 
 
@@ -21,6 +22,8 @@ void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HAN
 	execution_context->ppu = ppu;
 	ppu->execution_context = execution_context;
 	reset_ppu(ppu);
+	execution_context->nmi_flip_flop = 0;
+	execution_context->interrupts_disabled = 0;
 	execution_context->registers.A = 0x0;
 	execution_context->registers.X = 0x0;
 	execution_context->registers.Y = 0x0;
@@ -53,8 +56,8 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 	while(1) {
 		decoded_instruction = decode_address(to_decode_address, &opcode, &argument, &size);
 		if (decoded_instruction->name == NULL) {
-			ERROR_LOG("Invalid instruction (%x) at %p\n", opcode, to_decode_address);
-			return NULL;
+			WARN_LOG("Invalid instruction (%x) at %p\n", opcode, to_decode_address);
+			break;
 		}
 
 		void* virtual_address_assigned_test = allocate_address(execution_context->execution_area, execution_context->instruction_database->ppu_event_test_size);
@@ -143,17 +146,23 @@ void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long
 unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address) {
 	if(address >= 0x2000 && address < 0x2008) {
 		return ppu_read(execution_context->ppu, address);
-	}else{
+	}else if(address == 0x4016 || address == 0x4017) {
+		// These are IO for controller. We will ignore for now
+		return 0;
+	}
+	else{
 		ERROR_LOG("Invalid non ram read on address = %x\n", address);
 		exit(-1);
 	}
 
 }
 void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address, unsigned char value) {	
-	if(address >= 0x2000 && address < 0x2008) {
+	if((address >= 0x2000 && address < 0x2008) || address == 0x4014) {
 		ppu_write(execution_context->ppu, address, value);
 	}else if((address >=0x4000 && address < 0x4014) || address == 0x4015){
 		// These are IO for APU. We will ignore for now
+	}else if(address == 0x4016){
+		// These are IO for controller. We will ignore for now
 	}
 	else{
 		ERROR_LOG("Invalid non ram write on address = %x\n", address);

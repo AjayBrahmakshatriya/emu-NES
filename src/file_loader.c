@@ -91,6 +91,9 @@ int map_file(FILE_HANDLE *file_handle, void *address_space_start){
 	for(temp = address_space_start + 0x10000 + 0x0000; temp < (unsigned char*)(address_space_start) + 0x10000 + 0x0800; temp++){
 		*temp = 1;
 	}
+	for(temp = address_space_start + 0x10000 + 0x8000; temp < (unsigned char*)(address_space_start) + 0x10000 + 0x10000; temp++){
+		*temp = 1;
+	}
 	for(; temp < (unsigned char*)(address_space_start) + 0x10000 + 0x10000; temp++){
 		*temp = 0;
 	}
@@ -103,6 +106,7 @@ int map_file(FILE_HANDLE *file_handle, void *address_space_start){
 				memcpy((char*)address_space_start + 0xC000, (char*)file_handle->start_of_prg + 0x4000, 0x4000);
 			else	
 				memcpy((char*)address_space_start + 0xC000, (char*)file_handle->start_of_prg, 0x4000);
+			
 			return 0;
 		default:		
 			ERROR_LOG("Unsupported mapper = %d\n", mapper_id);
