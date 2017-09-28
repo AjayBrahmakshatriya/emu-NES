@@ -23,6 +23,10 @@ typedef struct __attribute__((packed)) {
 
 #define FILE_HEADERS_TRAINER_EXISTS (1 << 0x2)
 
+#define NAMETABLE_MIRROR_SINGLE 1
+#define NAMETABLE_MIRROR_DOUBLE 2
+#define NAMETABLE_MIRROR_NONE 3
+
 
 typedef struct {
 	char file_path[FILE_PATH_SIZE];
@@ -33,6 +37,9 @@ typedef struct {
 	void *start_of_prg;
 	size_t size_of_prg;
 	void* address_space_start;
+	void *start_of_chr_rom;
+	size_t size_of_chr_rom;
+	int nametable_mirroring;
 } FILE_HANDLE, *PFILE_HANDLE;
 
 

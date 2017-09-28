@@ -144,24 +144,26 @@ void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long
 	return;
 }
 unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address) {
+	
 	if(address >= 0x2000 && address < 0x2008) {
 		return ppu_read(execution_context->ppu, address);
 	}else if(address == 0x4016 || address == 0x4017) {
 		// These are IO for controller. We will ignore for now
 		return 0;
+	}if(address >= 0x800 && address < 0x1000) {
+		return *(unsigned char*)translate_address_to_emulation_context(execution_context->file_handle, address);
 	}
 	else{
 		ERROR_LOG("Invalid non ram read on address = %x\n", address);
 		exit(-1);
 	}
-
 }
 void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address, unsigned char value) {	
 	if((address >= 0x2000 && address < 0x2008) || address == 0x4014) {
 		ppu_write(execution_context->ppu, address, value);
 	}else if((address >=0x4000 && address < 0x4014) || address == 0x4015){
 		// These are IO for APU. We will ignore for now
-	}else if(address == 0x4016){
+	}else if(address == 0x4016 || address == 0x4017){
 		// These are IO for controller. We will ignore for now
 	}
 	else{

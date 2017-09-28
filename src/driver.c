@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	INFO_LOG("Execution to start at %p\n", execution_start_address);
 	INSTRUCTION_DATABASE *instruction_database = create_database(argv[2]);
 	EXECUTION_AREA *execution_area = create_execution_area(EXECUTION_AREA_START);
-	PPU *ppu = create_ppu();
+	PPU *ppu = create_ppu(file_handle);
 
 	EXECUTION_CONTEXT execution_context;
 	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database, ppu);

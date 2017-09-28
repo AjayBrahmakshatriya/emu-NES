@@ -26,12 +26,17 @@ typedef unsigned short WORD;
 typedef enum {
 	VERTICAL_BLANK = 0,
 	PRE_RENDER_SCANLINE = 1,
-	RENDERING = 2,
-	POST_RENDER_SCANLINE = 3
+	SPRITE0_WAIT = 2,
+	SPRITE0_DONE = 3,
+	POST_RENDER_SCANLINE = 4
 }PPU_STATES;
 
 
-static int scan_lines[] = {20, 1, 240, 1};
+static int scan_lines[] = {20, 1, 0, 0, 1};
+
+
+#define RENDERING_SCANLINES 240
+
 #define CYCLES_PER_SCANLINE 341
 
 #define STATUS_VERTICAL_BLANK		0b10000000
@@ -41,6 +46,14 @@ static int scan_lines[] = {20, 1, 240, 1};
 #define NOT_STATUS_VERTICAL_BLANK	0b01111111
 #define NOT_STATUS_SPRITE0		0b10111111
 #define NOT_STATUS_SPRITE_OVERFLOW	0b11011111
+
+
+typedef enum {
+	VERTICAL = 0,
+	HORIZONTAL = 1,
+	SINGLE_SCREEN = 2,
+	UNMIRRORED = 3,
+}NAMETABLE_MIRRORING;
 
 struct _EXECUTION_CONTEXT;
 typedef struct {
@@ -63,11 +76,13 @@ typedef struct {
 	BYTE VRAM[0x4000];
 	BYTE OAM[0xFF];
 	struct _EXECUTION_CONTEXT *execution_context;
-	PPU_STATES state;	
+	PPU_STATES state;
+	int last_sprite0_cycle;
+	NAMETABLE_MIRRORING nametable_mirroring;
 }PPU;
 
 
-PPU* create_ppu(void);
+PPU* create_ppu(FILE_HANDLE *file_handle);
 int destroy_ppu(PPU* ppu);
 
 BYTE ppu_read(PPU* ppu, WORD address);

@@ -69,7 +69,11 @@ FILE_HANDLE* load_file(const char* filename, void* base_address) {
 	}else{
 		file_handle->start_of_prg = base_address + SIZE_OF_HEADERS;
 	}
+	
 	file_handle->size_of_prg = (size_t)file_handle->file_headers->prg_rom_size * 0x4000;
+	file_handle->start_of_chr_rom = (char*)file_handle->start_of_prg + file_handle->size_of_prg;
+	file_handle->size_of_chr_rom = (size_t)file_handle->file_headers->chr_rom_size * 0x2000;
+	INFO_LOG("Size of chr_rom is %zu bytes\n", file_handle->size_of_chr_rom);
 	INFO_LOG("Size of game code is %zu bytes\n", file_handle->size_of_prg);
 	return file_handle;
 }
@@ -106,7 +110,7 @@ int map_file(FILE_HANDLE *file_handle, void *address_space_start){
 				memcpy((char*)address_space_start + 0xC000, (char*)file_handle->start_of_prg + 0x4000, 0x4000);
 			else	
 				memcpy((char*)address_space_start + 0xC000, (char*)file_handle->start_of_prg, 0x4000);
-			
+			file_handle->nametable_mirroring = NAMETABLE_MIRROR_SINGLE;	
 			return 0;
 		default:		
 			ERROR_LOG("Unsupported mapper = %d\n", mapper_id);
