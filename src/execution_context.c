@@ -125,7 +125,6 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
 		execution_context->execution_area->address_map->address_map[address+translated] = virtual_address_assigned_test;
 		translated += size;
 		to_decode_address += size;
-
 		if(is_bb_end_opcode(opcode))
 			break;
 	}

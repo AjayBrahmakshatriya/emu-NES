@@ -79,6 +79,7 @@ typedef struct {
 	PPU_STATES state;
 	int last_sprite0_cycle;
 	NAMETABLE_MIRRORING nametable_mirroring;
+	BYTE internal_vram_buffer;
 }PPU;
 
 

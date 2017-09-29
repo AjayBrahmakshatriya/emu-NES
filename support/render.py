@@ -8,7 +8,7 @@ def write_png(buf, width, height):
 
     # reverse the vertical line order and add null bytes at the start
     width_byte_4 = width * 4
-    raw_data = b''.join(b'\x00' + buf[span:span + width_byte_4] for span in range((height - 1) * width_byte_4, -1, - width_byte_4))
+    raw_data = b''.join(b'\x00' + buf[span:span + width_byte_4] for span in range(0, (height - 1) * width_byte_4 + 1, width_byte_4))
 
     def png_pack(png_tag, data):
         chunk_head = png_tag + data
@@ -29,6 +29,8 @@ data = f.read()
 im = ""
 for i in data:
 	#print ord(i)
+	if ord(i) >= len(colors):
+		print ord(i)
 	color = colors[ord(i)]
 	#print hex(color)
 	im2 = ""

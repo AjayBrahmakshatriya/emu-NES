@@ -89,10 +89,10 @@
 	.macro	set_V
 	pushf
 	jo	1f
-	andb	$OVERFLOW, %r14b
+	andb	$NOT_OVERFLOW, %r14b
 	jmp	2f
 1:
-	orb	$CARRY, %r14b
+	orb	$OVERFLOW, %r14b
 2:
 	popf
 	.endm

@@ -54,7 +54,6 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 		pattern_table = 0x1000;
 	else
 		pattern_table = 0x0000;
-	//pattern_table = 0;
 	BYTE backdrop_color = ppu->VRAM[0x3F00];
 	BYTE pallete[4];
 	int tileX, tileY;
@@ -64,14 +63,13 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 			int blockY = tileY / 2;
 			int superblockX = blockX / 2;
 			int superblockY = blockY / 2;
-			int attribute_byte = ppu->VRAM[nametable_data + 0xC30 + superblockY * 8 + superblockX];
-			int pallete_index = 0xff & (attribute_byte >> (6-(2*(2 * (blockY % 2) + (blockX % 2))))) ;
+			int attribute_byte = ppu->VRAM[nametable_data + 0x3C0 + superblockY * 8 + superblockX];
+			int pallete_index = 0b11 & (attribute_byte >> (6-(2*(2 * (blockY % 2) + (blockX % 2)))));
 			pallete[0] = backdrop_color;
 			pallete[1] = ppu->VRAM[0x3F00 + pallete_index * 4 + 1];		
 			pallete[2] = ppu->VRAM[0x3F00 + pallete_index * 4 + 2];		
 			pallete[3] = ppu->VRAM[0x3F00 + pallete_index * 4 + 3];
 			int tile_index = ppu->VRAM[nametable_data + tileY * 32 + tileX];
-			//tile_index = 0;
 			int tile_data_plane1 = pattern_table + tile_index * 16;
 			int tile_data_plane2 = pattern_table + tile_index * 16 + 8;
 			int x, y;
@@ -94,10 +92,10 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 }
 
 void ppu_draw_screen(PPU *ppu) {
-	/*FILE *dump = fopen("vram.chr", "rb");
-	fread(&(ppu->VRAM[0x2000]), 0x400, 1, dump);
-	fclose(dump);
-*/
+	//FILE *dump = fopen("dump.ram", "rb");
+	//fread(&(ppu->VRAM[0x2000]), 0x400, 1, dump);
+	//fclose(dump);
+
 	WORD nametable0, nametable1, nametable2, nametable3;
 	nametable0 = 0x2000;
 	switch(ppu->nametable_mirroring) {
@@ -268,7 +266,20 @@ void write_ppudata(PPU *ppu, BYTE data) {
 
 
 BYTE read_ppudata(PPU *ppu) {
-	return ppu->VRAM[(ppu->reg_address_upper << 8) | ppu->reg_address_lower];
+	BYTE data = ppu->internal_vram_buffer;
+	WORD address = (ppu->reg_address_upper << 8) | ppu->reg_address_lower;
+	WORD actual_address = address;
+	if(actual_address == 0x3F10 || actual_address == 0x3F14 || actual_address == 0x3F18 || actual_address == 0x3F1C)
+		actual_address-= 0x10; 
+	ppu->internal_vram_buffer = ppu->VRAM[actual_address];
+	if(ppu->reg_ppuctrl & 0b100)
+		address += 32;
+	else
+		address++;
+	address = address & 0xffff;
+	ppu->reg_address_lower = address & 0xff;
+	ppu->reg_address_upper = (address >> 8);
+	return data;
 }
 
 

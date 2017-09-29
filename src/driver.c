@@ -43,7 +43,13 @@ int main(int argc, char *argv[]) {
 		unsigned int address;
 		sscanf(argv[3], "%i", &address);
 		INFO_LOG("Address decompiling at = %x\n", address);	
-		decode_and_print_from(file_handle, execution_start_address - 0x8000 + address, -1);
+		if (argc == 4)
+			decode_and_print_from(file_handle, execution_start_address - 0x8000 + address, -1);
+		else{
+			int i = 0;
+			for (i = 0;i < 16; i++)
+				printf("%04x\n", *(unsigned short*)(ADDRESS_SPACE_START + address + 2*i));
+		}
 	}
 	destroy_ppu(ppu);
 	destroy_execution_area(execution_area);
