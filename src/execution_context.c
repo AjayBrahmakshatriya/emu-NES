@@ -139,6 +139,13 @@ void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long 
 	return return_address;
 }
 void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long next_address) {
+	if(execution_context->interrupts_disabled){
+		//printf("Execution continuing to = 0x%llx\n", (next_address));
+		//if(next_address == 0x900a)
+		//	__asm__("int $3");
+		//if (next_address == 0x896A)
+		//	__asm__("int $03");
+	}
 	INFO_LOG("Execution continuing to = 0x%llx\n", (next_address));
 	return;
 }

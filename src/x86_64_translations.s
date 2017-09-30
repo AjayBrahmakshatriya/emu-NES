@@ -1876,10 +1876,10 @@ NES_INSTRUCTION_0xe1:#	{"SBC", AM_X_ind, 6},
 	read_indirect_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -1912,10 +1912,10 @@ NES_INSTRUCTION_0xe5:#	{"SBC", AM_zpg, 3},
 	read_zpg
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -1950,10 +1950,10 @@ NES_INSTRUCTION_0xe9:#	{"SBC", AM_hash, 2},
 	movq	$__arg_e9_0, %rax
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -1986,10 +1986,10 @@ NES_INSTRUCTION_0xed:#	{"SBC", AM_abs, 4},
 	read_abs
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -2028,10 +2028,10 @@ NES_INSTRUCTION_0xf1:#	{"SBC", AM_ind_Y, 5},
 	read_indirect_Y
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -2059,10 +2059,10 @@ NES_INSTRUCTION_0xf5:#	{"SBC", AM_zpg_X, 4},
 	read_zpg_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -2096,10 +2096,10 @@ NES_INSTRUCTION_0xf9:#	{"SBC", AM_abs_Y, 4}
 	read_abs_Y
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b
@@ -2126,10 +2126,10 @@ NES_INSTRUCTION_0xfd:#	{"SBC", AM_abs_X, 4}
 	read_abs_X
 	testb	$CARRY, %r14b
 	jz 1f
-	movb	$1, %r8b
+	movb	$0, %r8b
 	jmp 2f
 1:
-	movb	$0, %r8b
+	movb	$1, %r8b
 2:
 	rcrb	$1, %r8b
 	sbbb	%al, %r10b

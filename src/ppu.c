@@ -3,6 +3,8 @@
 #include "log_messages.h"
 #include <string.h>
 
+#define SHOW_TILE_DEBUG_GRIDS 0
+
 PPU *create_ppu(FILE_HANDLE *file_handle) {
 	PPU *ppu = malloc(sizeof(PPU));
 	if(!ppu){
@@ -64,7 +66,7 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 			int superblockX = blockX / 2;
 			int superblockY = blockY / 2;
 			int attribute_byte = ppu->VRAM[nametable_data + 0x3C0 + superblockY * 8 + superblockX];
-			int pallete_index = 0b11 & (attribute_byte >> (6-(2*(2 * (blockY % 2) + (blockX % 2)))));
+			int pallete_index = 0b11 & (attribute_byte >> ((2*(2 * (blockY % 2) + (blockX % 2)))));
 			pallete[0] = backdrop_color;
 			pallete[1] = ppu->VRAM[0x3F00 + pallete_index * 4 + 1];		
 			pallete[2] = ppu->VRAM[0x3F00 + pallete_index * 4 + 2];		
@@ -78,11 +80,17 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 				BYTE plane1 = ppu->VRAM[tile_data_plane1 + y];
 				BYTE plane2 = ppu->VRAM[tile_data_plane2 + y];
 				for (x = 0; x < 8; x++) {
+					#if SHOW_TILE_DEBUG_GRIDS
+					if (tileX % 4 == 0 && tileY % 4 == 0 && ((x == 1  || x == 0) && (y == 0 || y == 1) )){
+						setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, 0xf);
+						continue;
+					}
+					
 					if(x == 0 && y == 0){
 						setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, 0xf);
 						continue;
 					}
-						
+					#endif	
 					int c_id = (plane1 >> (7-x) & 0b1) | ((plane2 >> (7-x) & 0b1) << 1);
 					setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, pallete[c_id]);
 				}
@@ -92,10 +100,6 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 }
 
 void ppu_draw_screen(PPU *ppu) {
-	//FILE *dump = fopen("dump.ram", "rb");
-	//fread(&(ppu->VRAM[0x2000]), 0x400, 1, dump);
-	//fclose(dump);
-
 	WORD nametable0, nametable1, nametable2, nametable3;
 	nametable0 = 0x2000;
 	switch(ppu->nametable_mirroring) {
@@ -128,7 +132,6 @@ void ppu_draw_screen(PPU *ppu) {
 	render_nametable(ppu, nametable1, 256, 0);
 	render_nametable(ppu, nametable2, 0, 240);
 	render_nametable(ppu, nametable3, 256, 240);
-
 
 	FILE *output_file = fopen("temp_file.txt", "wb");
 	fwrite(ppu->output_buffer, 480 * 512, 1, output_file);
@@ -278,7 +281,7 @@ BYTE read_ppudata(PPU *ppu) {
 		address++;
 	address = address & 0xffff;
 	ppu->reg_address_lower = address & 0xff;
-	ppu->reg_address_upper = (address >> 8);
+	ppu->reg_address_upper = (address >> 8);	
 	return data;
 }
 
