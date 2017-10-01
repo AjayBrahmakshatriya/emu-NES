@@ -2,6 +2,7 @@
 #include "ppu.h"
 #include "log_messages.h"
 #include <string.h>
+#include <unistd.h>
 
 #define SHOW_TILE_DEBUG_GRIDS 0
 
@@ -12,7 +13,7 @@ PPU *create_ppu(FILE_HANDLE *file_handle) {
 		return NULL;
 	}
 
-	ppu->output_buffer = malloc(512*480);
+	ppu->output_buffer = malloc(256*240);
 	ppu->address_write_flag = 0;
 	ppu->scroll_write_flag = 0;
 	ppu->reg_ppustatus = 0;
@@ -35,6 +36,7 @@ PPU *create_ppu(FILE_HANDLE *file_handle) {
 }
 
 void reset_ppu(PPU *ppu) {
+	ppu->total_frames_rendered = 0;
 	ppu->address_write_flag = 0;
 	ppu->scroll_write_flag = 0;
 	ppu->reg_ppustatus = 0 | STATUS_VERTICAL_BLANK;
@@ -45,26 +47,84 @@ void reset_ppu(PPU *ppu) {
 		ppu->VRAM[i] = 0;
 }
 
-void setPixel(PPU *ppu, int x, int y, BYTE pixel) {
-	ppu->output_buffer[y * 512 + x] = pixel;
-}
 
-
-void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
+void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
+	WORD nametable[4];
 	WORD pattern_table;
 	if(ppu->reg_ppuctrl & 0b10000) 
 		pattern_table = 0x1000;
 	else
 		pattern_table = 0x0000;
 	BYTE backdrop_color = ppu->VRAM[0x3F00];
-	BYTE pallete[4];
-	int tileX, tileY;
-	for(tileY = 0; tileY < 30; tileY++){
-		for (tileX = 0; tileX < 32; tileX++){
-			int blockX = tileX / 2;
-			int blockY = tileY / 2;
-			int superblockX = blockX / 2;
-			int superblockY = blockY / 2;
+	BYTE pallete[4];	
+	nametable[0] = 0x2000;
+	switch(ppu->nametable_mirroring) {
+		case VERTICAL:
+			nametable[1] = 0x2400;
+			nametable[2] = 0x2000;
+			nametable[3] = 0x2400;
+			break;
+		case HORIZONTAL:
+			nametable[1] = 0x2000;
+			nametable[2] = 0x2800;
+			nametable[3] = 0x2800;
+			break;
+		case SINGLE_SCREEN:
+			nametable[1] = 0x2000;
+			nametable[2] = 0x2000;
+			nametable[3] = 0x2000;
+			break;
+		case UNMIRRORED:
+			nametable[1] = 0x2400;
+			nametable[2] = 0x2800;
+			nametable[3] = 0x2C00;
+			break;
+		default:
+			ERROR_LOG("Invalid nametable mirroring for PPU\n");
+			return;
+	}
+	
+	// We will assume now that we have to render from (0,0) to (256, 240)
+	
+	int startX = 0, endX = 256;
+	int startY = fromY, endY = toY;
+	int total_writes = 0;	
+	int scrollX = ppu->reg_scroll_x;
+	int scrollY = ppu->reg_scroll_y;
+	if(ppu->reg_ppuctrl & 0b1){
+		scrollX+= 256;
+	}
+	if(ppu->reg_ppuctrl & 0b10){
+		scrollY+= 240;
+	}
+	startX += scrollX;
+	startY += scrollY;
+	endX += scrollX;
+	endY += scrollY;
+	int tileStartX = startX / 8;
+	int tileStartY = startY / 8;
+	int tileEndX = endX / 8;
+	int tileEndY = endY / 8;
+	if(tileEndX * 8 != endX)
+		tileEndX++;
+	if(tileEndY * 8 != endY)
+		tileEndY++;
+
+	int tileXi, tileYi;
+	for(tileYi = tileStartY; tileYi < tileEndY;tileYi++){
+		int tileX, tileY, blockX, blockY, superblockX, superblockY;
+		tileY = (tileYi + 30 + 60) % 30;
+		blockY = tileY / 2;
+		superblockY = blockY / 2;	
+		for(tileXi = tileStartX; tileXi < tileEndX;tileXi++){
+			int innerX;
+			int innerY;			
+			int nametable_id = (tileXi / 32) + (tileYi / 30) * 2;
+			tileX = (tileXi + 32 + 64) % 32;
+			blockX = tileX / 2;
+			superblockX = blockX / 2;
+
+			WORD nametable_data = nametable[nametable_id];
 			int attribute_byte = ppu->VRAM[nametable_data + 0x3C0 + superblockY * 8 + superblockX];
 			int pallete_index = 0b11 & (attribute_byte >> ((2*(2 * (blockY % 2) + (blockX % 2)))));
 			pallete[0] = backdrop_color;
@@ -74,74 +134,42 @@ void render_nametable(PPU *ppu, WORD nametable_data, int startX, int startY){
 			int tile_index = ppu->VRAM[nametable_data + tileY * 32 + tileX];
 			int tile_data_plane1 = pattern_table + tile_index * 16;
 			int tile_data_plane2 = pattern_table + tile_index * 16 + 8;
-			int x, y;
 
-			for(y = 0; y < 8; y++){
-				BYTE plane1 = ppu->VRAM[tile_data_plane1 + y];
-				BYTE plane2 = ppu->VRAM[tile_data_plane2 + y];
-				for (x = 0; x < 8; x++) {
-					#if SHOW_TILE_DEBUG_GRIDS
-					if (tileX % 4 == 0 && tileY % 4 == 0 && ((x == 1  || x == 0) && (y == 0 || y == 1) )){
-						setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, 0xf);
+			for(innerY = 0; innerY < 8; innerY++){
+				int realY = tileYi * 8 + innerY;
+				BYTE plane1 = ppu->VRAM[tile_data_plane1 + innerY];
+				BYTE plane2 = ppu->VRAM[tile_data_plane2 + innerY];
+				if(realY < startY)
+					continue;
+				if(realY >= endY)
+					break;
+				for(innerX = 0; innerX < 8; innerX++){		
+					int realX = tileXi * 8 + innerX;
+					if(realX < startX)
 						continue;
-					}
-					
-					if(x == 0 && y == 0){
-						setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, 0xf);
-						continue;
-					}
-					#endif	
-					int c_id = (plane1 >> (7-x) & 0b1) | ((plane2 >> (7-x) & 0b1) << 1);
-					setPixel(ppu, startX + tileX * 8 + x, startY + tileY * 8 + y, pallete[c_id]);
+					if(realX >= endX)
+						break;
+					int c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
+					int x = (realX - scrollX + 256 + 256) % 256;
+					int y = (realY - scrollY + 240 + 240) % 240;
+					ppu->output_buffer[y * 256 + x] = pallete[c_id];
+					total_writes++;
 				}
-			}
+			}	
+
 		}
 	}
-}
 
-void ppu_draw_screen(PPU *ppu) {
-	WORD nametable0, nametable1, nametable2, nametable3;
-	nametable0 = 0x2000;
-	switch(ppu->nametable_mirroring) {
-		case VERTICAL:
-			nametable1 = 0x2400;
-			nametable2 = 0x2000;
-			nametable3 = 0x2400;
-			break;
-		case HORIZONTAL:
-			nametable1 = 0x2000;
-			nametable2 = 0x2800;
-			nametable3 = 0x2800;
-			break;
-		case SINGLE_SCREEN:
-			nametable1 = 0x2000;
-			nametable2 = 0x2000;
-			nametable3 = 0x2000;
-			break;
-		case UNMIRRORED:
-			nametable1 = 0x2400;
-			nametable2 = 0x2800;
-			nametable3 = 0x2C00;
-			break;
-		default:
-			ERROR_LOG("Invalid nametable mirroring for PPU\n");
-			return;
-	}
-	
-	render_nametable(ppu, nametable0, 0, 0);
-	render_nametable(ppu, nametable1, 256, 0);
-	render_nametable(ppu, nametable2, 0, 240);
-	render_nametable(ppu, nametable3, 256, 240);
-
-	FILE *output_file = fopen("temp_file.txt", "wb");
-	fwrite(ppu->output_buffer, 480 * 512, 1, output_file);
-	fclose(output_file); 
+	FILE *output = fopen("temp_file.txt", "r+");
+	fseek(output, 0, SEEK_SET);
+	fwrite(ppu->output_buffer, 240 * 256, 1, output);
+	fclose(output);
 	INFO_LOG("Buffer render successful\n");
 }
 
 
 int calculate_sprite0_cycles(PPU *ppu) {
-	return 20 * CYCLES_PER_SCANLINE;
+	return 32 * CYCLES_PER_SCANLINE;
 }
 
 
@@ -149,6 +177,8 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 	INFO_LOG("End of state %d triggered\n", execution_context->ppu->state);
 	switch(execution_context->ppu->state) {
 		case VERTICAL_BLANK:
+			execution_context->ppu->reg_scroll_x = 0;
+			execution_context->ppu->reg_scroll_y = 0;
 			execution_context->ppu->state = PRE_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[PRE_RENDER_SCANLINE];
 			execution_context->ppu->reg_ppustatus &= NOT_STATUS_VERTICAL_BLANK;
@@ -167,7 +197,21 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 		case SPRITE0_DONE:
 			execution_context->ppu->state = POST_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event +=CYCLES_PER_SCANLINE * scan_lines[POST_RENDER_SCANLINE];
-			ppu_draw_screen(execution_context->ppu);
+			ppu_draw_screen(execution_context->ppu, 0, 0, 256, 240);
+			execution_context->ppu->total_frames_rendered ++;
+
+			struct timeval now;
+			gettimeofday(&now, NULL);
+
+			if(execution_context->ppu->total_frames_rendered != 1){
+				int elasped = ((now.tv_sec - execution_context->ppu->start_time.tv_sec) * 1000000) + (now.tv_usec - execution_context->ppu->start_time.tv_usec);
+				int time_left = 1000000/30 - elasped;
+				if(time_left > 0)
+					usleep(time_left);
+			}
+			execution_context->ppu->start_time = now;
+
+
 			break;
 		case POST_RENDER_SCANLINE:
 			execution_context->ppu->state = VERTICAL_BLANK;

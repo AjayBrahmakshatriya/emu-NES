@@ -994,6 +994,9 @@ NES_INSTRUCTION_0x67:#	{NULL , AM_impl, -1},
 	.globl NES_INSTRUCTION_0x68
 NES_INSTRUCTION_0x68:#	{"PLA", AM_impl, 4},
 	movb	0x100(%rbx, %r13), %r10b
+	test	%r10b, %r10b
+	set_N
+	set_Z
 	incb	%r13b
 	
 

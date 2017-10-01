@@ -2,7 +2,7 @@
 #define LOG_MESSAGES_H
 #include <stdio.h>
 
-#define LOG_ALL 1
+#define LOG_ALL 0
 
 #if LOG_ALL
 	#define ERROR_LOG(...) fprintf(stderr, "ERROR: " __VA_ARGS__)

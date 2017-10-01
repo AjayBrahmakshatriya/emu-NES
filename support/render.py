@@ -28,11 +28,9 @@ data = f.read()
 
 im = ""
 for i in data:
-	#print ord(i)
 	if ord(i) >= len(colors):
 		print ord(i)
 	color = colors[ord(i)]
-	#print hex(color)
 	im2 = ""
 	im2 += chr(color % 0x100)
 	color/=0x100
@@ -43,6 +41,6 @@ for i in data:
 	im += im2[2] + im2[1] + im2[0]
 	im+=chr(0xff)
 
-data = write_png(im, 512, 480)
+data = write_png(im, 256, 240)
 with open("my_image.png", 'wb') as fd:
     fd.write(data)

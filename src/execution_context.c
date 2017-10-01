@@ -121,10 +121,17 @@ void *generate_basic_block(EXECUTION_CONTEXT *execution_context, unsigned long l
  
 		}
 		write_argument(execution_context, decoded_instruction, opcode, -1, virtual_address_assigned, address+translated+size, 2);
+	/*	if(address + translated == 0xE427){
+			virtual_address_assigned_test = allocate_address(execution_context->execution_area, 1);
+			*(unsigned char*)virtual_address_assigned_test = 0xcc;
+		}*/
 
 		execution_context->execution_area->address_map->address_map[address+translated] = virtual_address_assigned_test;
 		translated += size;
 		to_decode_address += size;
+
+
+		
 		if(is_bb_end_opcode(opcode))
 			break;
 	}
@@ -139,13 +146,6 @@ void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long 
 	return return_address;
 }
 void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long next_address) {
-	if(execution_context->interrupts_disabled){
-		//printf("Execution continuing to = 0x%llx\n", (next_address));
-		//if(next_address == 0x900a)
-		//	__asm__("int $3");
-		//if (next_address == 0x896A)
-		//	__asm__("int $03");
-	}
 	INFO_LOG("Execution continuing to = 0x%llx\n", (next_address));
 	return;
 }
@@ -155,7 +155,7 @@ unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context
 		return ppu_read(execution_context->ppu, address);
 	}else if(address == 0x4016 || address == 0x4017) {
 		// These are IO for controller. We will ignore for now
-		return 0;
+		return 0x40;
 	}if(address >= 0x800 && address < 0x1000) {
 		return *(unsigned char*)translate_address_to_emulation_context(execution_context->file_handle, address);
 	}

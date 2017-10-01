@@ -17,7 +17,7 @@
 #define __read__
 #define __write__
 
-
+#include <sys/time.h>
 
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
@@ -80,6 +80,8 @@ typedef struct {
 	int last_sprite0_cycle;
 	NAMETABLE_MIRRORING nametable_mirroring;
 	BYTE internal_vram_buffer;
+	unsigned long long total_frames_rendered;
+	struct timeval start_time;
 }PPU;
 
 
