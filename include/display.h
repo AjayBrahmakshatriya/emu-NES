@@ -10,6 +10,7 @@
 typedef struct {
 	SDL_Window *window;
 	SDL_Surface *surface;
+	SDL_Thread *event_thread;
 }NES_DISPLAY;
 
 
