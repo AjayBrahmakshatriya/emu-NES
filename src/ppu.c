@@ -229,17 +229,15 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 			update_display(execution_context->nes_display, execution_context->ppu->output_buffer);
 			execution_context->ppu->total_frames_rendered ++;
 
-			struct timeval now;
-			gettimeofday(&now, NULL);
-
 			if(execution_context->ppu->total_frames_rendered != 1){
+				struct timeval now;
+				gettimeofday(&now, NULL);
 				int elasped = ((now.tv_sec - execution_context->ppu->start_time.tv_sec) * 1000000) + (now.tv_usec - execution_context->ppu->start_time.tv_usec);
-				int time_left = 1000000/30 - elasped;
+				int time_left = 1000000/60 - elasped;
 				if(time_left > 0)
 					usleep(time_left);
 			}
-			execution_context->ppu->start_time = now;
-
+			gettimeofday(&execution_context->ppu->start_time, NULL);
 
 			break;
 		case POST_RENDER_SCANLINE:
