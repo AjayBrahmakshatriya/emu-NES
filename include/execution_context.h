@@ -5,6 +5,7 @@
 #include "execution_area.h"
 #include "instruction_database.h"
 #include "ppu.h"
+#include "display.h"
 
 typedef struct {
 	void (*basic_block_end)(void);					// Offset 0x00
@@ -40,13 +41,14 @@ typedef struct _EXECUTION_CONTEXT {
 	unsigned long long interrupts_disabled;				// Offset 0x88
 	EMULATION_VECTOR emulation_vector;
 	PPU *ppu;
+	NES_DISPLAY *nes_display;
 }EXECUTION_CONTEXT;
 
 
 
 
 
-void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_databasei, PPU *ppu);
+void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_databasei, PPU *ppu, NES_DISPLAY *nes_display);
 void* get_execution_address(EXECUTION_CONTEXT *execution_context, unsigned long long address);
 
 

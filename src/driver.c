@@ -34,9 +34,10 @@ int main(int argc, char *argv[]) {
 	INSTRUCTION_DATABASE *instruction_database = create_database(argv[2]);
 	EXECUTION_AREA *execution_area = create_execution_area(EXECUTION_AREA_START);
 	PPU *ppu = create_ppu(file_handle);
+	NES_DISPLAY *nes_display = create_nes_display();
 
 	EXECUTION_CONTEXT execution_context;
-	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database, ppu);
+	initialize_execution_context(&execution_context, file_handle, execution_area, instruction_database, ppu, nes_display);
 	if(argc == 3 )
 		start_execution(&execution_context);	
 	else{
@@ -51,10 +52,11 @@ int main(int argc, char *argv[]) {
 				printf("%04x\n", *(unsigned short*)(ADDRESS_SPACE_START + address + 2*i));
 		}
 	}
+
+	destroy_nes_display(nes_display);
 	destroy_ppu(ppu);
 	destroy_execution_area(execution_area);
 	unmap_file(file_handle);	
-	close_file(file_handle);
-	
+	close_file(file_handle);	
 	return 0;
 }

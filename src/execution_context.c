@@ -15,12 +15,13 @@ void intialize_emulation_vector(EMULATION_VECTOR *emulation_vector) {
 }
 
 
-void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_database, PPU *ppu) {
+void initialize_execution_context(EXECUTION_CONTEXT *execution_context, FILE_HANDLE *file_handle, EXECUTION_AREA *execution_area, INSTRUCTION_DATABASE *instruction_database, PPU *ppu, NES_DISPLAY *nes_display) {
 	execution_context->file_handle = file_handle;
 	execution_context->execution_area = execution_area;
 	execution_context->instruction_database = instruction_database;
 	execution_context->ppu = ppu;
 	ppu->execution_context = execution_context;
+	execution_context->nes_display = nes_display;
 	reset_ppu(ppu);
 	execution_context->nmi_flip_flop = 0;
 	execution_context->interrupts_disabled = 0;

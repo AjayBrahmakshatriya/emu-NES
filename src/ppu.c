@@ -6,6 +6,25 @@
 
 #define SHOW_TILE_DEBUG_GRIDS 0
 
+static unsigned long long colors[] = {
+	0x7C7C7C, 0x0000FC, 0x0000BC, 0x4428BC, 
+	0x940084, 0xA80020, 0xA81000, 0x881400, 
+	0x503000, 0x007800, 0x006800, 0x005800, 
+	0x004058, 0x000000, 0x000000, 0x000000, 
+	0xBCBCBC, 0x0078F8, 0x0058F8, 0x6844FC, 
+	0xD800CC, 0xE40058, 0xF83800, 0xE45C10, 
+	0xAC7C00, 0x00B800, 0x00A800, 0x00A844, 
+	0x008888, 0x000000, 0x000000, 0x000000, 
+	0xF8F8F8, 0x3CBCFC, 0x6888FC, 0x9878F8, 
+	0xF878F8, 0xF85898, 0xF87858, 0xFCA044, 
+	0xF8B800, 0xB8F818, 0x58D854, 0x58F898, 
+	0x00E8D8, 0x787878, 0x000000, 0x000000, 
+	0xFCFCFC, 0xA4E4FC, 0xB8B8F8, 0xD8B8F8, 
+	0xF8B8F8, 0xF8A4C0, 0xF0D0B0, 0xFCE0A8, 
+	0xF8D878, 0xD8F878, 0xB8F8B8, 0xB8F8D8, 
+	0x00FCFC, 0xF8D8F8, 0x000000, 0x000000
+};
+
 PPU *create_ppu(FILE_HANDLE *file_handle) {
 	PPU *ppu = malloc(sizeof(PPU));
 	if(!ppu){
@@ -13,7 +32,7 @@ PPU *create_ppu(FILE_HANDLE *file_handle) {
 		return NULL;
 	}
 
-	ppu->output_buffer = malloc(256*240);
+	ppu->output_buffer = malloc(256*240*3);
 	ppu->address_write_flag = 0;
 	ppu->scroll_write_flag = 0;
 	ppu->reg_ppustatus = 0;
@@ -46,7 +65,15 @@ void reset_ppu(PPU *ppu) {
 	for(i=0x2000; i < 0x3000; i++)
 		ppu->VRAM[i] = 0;
 }
-
+void setPixel(PPU *ppu, int x, int y, BYTE color_id){
+	unsigned long long color = colors[color_id];
+	BYTE r = (color >> 16) & 0xff;
+	BYTE g = (color >> 8) & 0xff;
+	BYTE b = (color >> 0) & 0xff;
+	ppu->output_buffer[(y * 256 + x)*3+0] = r;
+	ppu->output_buffer[(y * 256 + x)*3+1] = g;
+	ppu->output_buffer[(y * 256 + x)*3+2] = b;
+}
 
 void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 	WORD nametable[4];
@@ -152,7 +179,7 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 					int c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
 					int x = (realX - scrollX + 256 + 256) % 256;
 					int y = (realY - scrollY + 240 + 240) % 240;
-					ppu->output_buffer[y * 256 + x] = pallete[c_id];
+					setPixel(ppu, x, y, pallete[c_id]);
 					total_writes++;
 				}
 			}	
@@ -160,10 +187,11 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 		}
 	}
 
-	FILE *output = fopen("temp_file.txt", "r+");
+	/*FILE *output = fopen("temp_file.txt", "r+");
 	fseek(output, 0, SEEK_SET);
 	fwrite(ppu->output_buffer, 240 * 256, 1, output);
 	fclose(output);
+	*/
 	INFO_LOG("Buffer render successful\n");
 }
 
@@ -198,6 +226,7 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 			execution_context->ppu->state = POST_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event +=CYCLES_PER_SCANLINE * scan_lines[POST_RENDER_SCANLINE];
 			ppu_draw_screen(execution_context->ppu, 0, 0, 256, 240);
+			update_display(execution_context->nes_display, execution_context->ppu->output_buffer);
 			execution_context->ppu->total_frames_rendered ++;
 
 			struct timeval now;

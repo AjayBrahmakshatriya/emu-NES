@@ -11,7 +11,7 @@ TARGET=$(BUILD_PATH)/emu-nes.out
 
 CC=clang
 CFLAGS=
-LINK_FLAGS=
+LINK_FLAGS=-lSDL2
 
 MAKE_FLAGS=--no-print-directory
 
