@@ -187,11 +187,76 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 		}
 	}
 
-	/*FILE *output = fopen("temp_file.txt", "r+");
-	fseek(output, 0, SEEK_SET);
-	fwrite(ppu->output_buffer, 240 * 256, 1, output);
-	fclose(output);
-	*/
+
+
+	/* Sprites rendering */
+
+	int scanline;
+	BYTE scanline_color[256];
+	int sprite_size = (ppu->reg_ppuctrl & 0b100000)?16:8;
+	for(scanline = fromY; scanline < toY; scanline++){
+		int x;	
+		for(x = 0; x < 256; x++)
+			scanline_color[x] = backdrop_color;
+		int sprite_index;
+		for(sprite_index = 0; sprite_index < 64; sprite_index++){
+			
+
+
+
+			int y = ppu->OAM[sprite_index * 4] + 1;
+			if(y >= 0xF0)
+				continue;
+			
+			BYTE byte1 = ppu->OAM[sprite_index * 4 + 1];
+			BYTE byte2 = ppu->OAM[sprite_index * 4 + 2];
+			int x = ppu->OAM[sprite_index * 4 + 3];
+			if(y+sprite_size <= scanline || scanline < y)
+				continue;
+			int line_from_sprite = scanline - y;
+			WORD pattern_table;
+			int tile_index;
+			if(sprite_size == 8){
+				pattern_table = (ppu->reg_ppuctrl & 0b1000)?0x1000:0x0000;
+				tile_index = byte1;
+			}
+			else{
+				tile_index = byte1 &0b11111110;
+				pattern_table = (byte1 & 0b1)?0x1000:0x0000;
+			}
+			
+			int tile_switcher = 0;
+			if (line_from_sprite >= 8)
+				tile_switcher = 0x8;
+
+			BYTE plane1 = ppu->VRAM[pattern_table + 0x10 * tile_index + line_from_sprite + 0 + tile_switcher];
+			BYTE plane2 = ppu->VRAM[pattern_table + 0x10 * tile_index + line_from_sprite + 8 + tile_switcher];
+			int pallete_index = (byte2 & 0b11) + 4;
+			BYTE pallete[4];
+			pallete[0] = backdrop_color;
+			pallete[1] = ppu->VRAM[0x3F00 + pallete_index * 4 + 1];		
+			pallete[2] = ppu->VRAM[0x3F00 + pallete_index * 4 + 2];		
+			pallete[3] = ppu->VRAM[0x3F00 + pallete_index * 4 + 3];
+			int innerX;
+			for(innerX = 0; innerX < 8; innerX++){
+				if(innerX + x >= 256)
+					continue;
+				if (scanline_color[innerX + x] != backdrop_color)
+					continue;
+				int c_id;
+				if(byte2 & 0b1000000)
+					c_id = (plane1 >> (innerX) & 0b1) | ((plane2 >> (innerX) & 0b1) << 1);
+				else
+					c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
+				scanline_color[innerX + x] = pallete[c_id];
+			}	
+		}
+		for(x = 0; x < 256; x++)
+			if(scanline_color[x] != backdrop_color)
+				setPixel(ppu, x, scanline, scanline_color[x]);
+	}
+	int x;
+	
 	INFO_LOG("Buffer render successful\n");
 }
 
