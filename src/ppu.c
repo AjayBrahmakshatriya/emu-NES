@@ -32,7 +32,7 @@ PPU *create_ppu(FILE_HANDLE *file_handle) {
 		return NULL;
 	}
 
-	ppu->output_buffer = malloc(256*240*3);
+	ppu->output_buffer = malloc(256*240*4);
 	ppu->address_write_flag = 0;
 	ppu->scroll_write_flag = 0;
 	ppu->reg_ppustatus = 0;
@@ -70,9 +70,21 @@ void setPixel(PPU *ppu, int x, int y, BYTE color_id){
 	BYTE r = (color >> 16) & 0xff;
 	BYTE g = (color >> 8) & 0xff;
 	BYTE b = (color >> 0) & 0xff;
-	ppu->output_buffer[(y * 256 + x)*3+0] = r;
-	ppu->output_buffer[(y * 256 + x)*3+1] = g;
-	ppu->output_buffer[(y * 256 + x)*3+2] = b;
+	ppu->output_buffer[(y * 256 + x)*4+0] = r;
+	ppu->output_buffer[(y * 256 + x)*4+1] = g;
+	ppu->output_buffer[(y * 256 + x)*4+2] = b;
+	ppu->output_buffer[(y * 256 + x)*4+3] = color_id;
+}
+
+BYTE getPixel(PPU *ppu, int x, int y){
+	return ppu->output_buffer[(y * 256 + x) * 4 + 3];
+}
+
+
+void coordinate_from_cycles(int ppuCC, int *x, int *y){
+	*y = ppuCC / 341;
+	*x = ppuCC % 341;
+	//CPUcollisionCC = ((Y+21)*341+X)/3
 }
 
 void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
@@ -115,19 +127,27 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 	
 	int startX = 0, endX = 256;
 	int startY = fromY, endY = toY;
+	int startClipX = fromX, endClipX = toX;
 	int total_writes = 0;	
 	int scrollX = ppu->reg_scroll_x;
 	int scrollY = ppu->reg_scroll_y;
-	if(ppu->reg_ppuctrl & 0b1){
+	if(ppu->nametable_selection & 0b1){
 		scrollX+= 256;
 	}
-	if(ppu->reg_ppuctrl & 0b10){
+	if(ppu->nametable_selection & 0b10){
 		scrollY+= 240;
 	}
 	startX += scrollX;
 	startY += scrollY;
 	endX += scrollX;
 	endY += scrollY;
+
+	endY++; // Adjustment for all calculation which are based on y < endY
+	
+
+	startClipX += scrollX;
+	endClipX += scrollX;
+	
 	int tileStartX = startX / 8;
 	int tileStartY = startY / 8;
 	int tileEndX = endX / 8;
@@ -146,7 +166,7 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 		for(tileXi = tileStartX; tileXi < tileEndX;tileXi++){
 			int innerX;
 			int innerY;			
-			int nametable_id = (tileXi / 32) + (tileYi / 30) * 2;
+			int nametable_id = (tileXi / 32) % 2 + (tileYi / 30)%2 * 2;
 			tileX = (tileXi + 32 + 64) % 32;
 			blockX = tileX / 2;
 			superblockX = blockX / 2;
@@ -176,6 +196,12 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 						continue;
 					if(realX >= endX)
 						break;
+					if(realY == startY && realX < startClipX)
+						continue;
+						
+					if(realY == (endY - 1) && realX > endClipX)
+						continue;
+
 					int c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
 					int x = (realX - scrollX + 256 + 256) % 256;
 					int y = (realY - scrollY + 240 + 240) % 240;
@@ -193,17 +219,14 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 
 	int scanline;
 	BYTE scanline_color[256];
+	BYTE scanline_priority[256];
 	int sprite_size = (ppu->reg_ppuctrl & 0b100000)?16:8;
-	for(scanline = fromY; scanline < toY; scanline++){
+	for(scanline = fromY; scanline <= toY; scanline++){
 		int x;	
 		for(x = 0; x < 256; x++)
 			scanline_color[x] = backdrop_color;
 		int sprite_index;
 		for(sprite_index = 0; sprite_index < 64; sprite_index++){
-			
-
-
-
 			int y = ppu->OAM[sprite_index * 4] + 1;
 			if(y >= 0xF0)
 				continue;
@@ -214,6 +237,8 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 			if(y+sprite_size <= scanline || scanline < y)
 				continue;
 			int line_from_sprite = scanline - y;
+			if(byte2 & 0b10000000)
+				line_from_sprite = sprite_size - line_from_sprite-1;
 			WORD pattern_table;
 			int tile_index;
 			if(sprite_size == 8){
@@ -249,11 +274,18 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 				else
 					c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
 				scanline_color[innerX + x] = pallete[c_id];
+				scanline_priority[innerX + x] = (byte2 >> 5) & 1;
 			}	
 		}
-		for(x = 0; x < 256; x++)
-			if(scanline_color[x] != backdrop_color)
+		for(x = 0; x < 256; x++){
+			if(scanline == fromY && x < fromX)
+				continue;
+			if(scanline == toY && x > toX)
+				continue;
+			int tile_color = getPixel(ppu, x, scanline);
+			if(scanline_color[x] != backdrop_color && (tile_color == backdrop_color || scanline_priority[x]==0))
 				setPixel(ppu, x, scanline, scanline_color[x]);
+		}
 	}
 	int x;
 	
@@ -262,7 +294,7 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 
 
 int calculate_sprite0_cycles(PPU *ppu) {
-	return 32 * CYCLES_PER_SCANLINE;
+	return 30 * CYCLES_PER_SCANLINE;
 }
 
 
@@ -270,8 +302,6 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 	INFO_LOG("End of state %d triggered\n", execution_context->ppu->state);
 	switch(execution_context->ppu->state) {
 		case VERTICAL_BLANK:
-			execution_context->ppu->reg_scroll_x = 0;
-			execution_context->ppu->reg_scroll_y = 0;
 			execution_context->ppu->state = PRE_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[PRE_RENDER_SCANLINE];
 			execution_context->ppu->reg_ppustatus &= NOT_STATUS_VERTICAL_BLANK;
@@ -281,6 +311,8 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 			execution_context->ppu->state = SPRITE0_WAIT;
 			execution_context->ppu->last_sprite0_cycle = calculate_sprite0_cycles(execution_context->ppu);
 			execution_context->cycles_to_ppu_event += execution_context->ppu->last_sprite0_cycle;
+			execution_context->ppu->plot_from_x = 0;
+			execution_context->ppu->plot_from_y = 0;
 			break;
 		case SPRITE0_WAIT:
 			execution_context->ppu->state = SPRITE0_DONE;
@@ -290,7 +322,7 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 		case SPRITE0_DONE:
 			execution_context->ppu->state = POST_RENDER_SCANLINE;
 			execution_context->cycles_to_ppu_event +=CYCLES_PER_SCANLINE * scan_lines[POST_RENDER_SCANLINE];
-			ppu_draw_screen(execution_context->ppu, 0, 0, 256, 240);
+			ppu_draw_screen(execution_context->ppu, execution_context->ppu->plot_from_x, execution_context->ppu->plot_from_y, 255, 239);
 			update_display(execution_context->nes_display, execution_context->ppu->output_buffer);
 			execution_context->ppu->total_frames_rendered ++;
 
@@ -309,6 +341,9 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 			execution_context->ppu->state = VERTICAL_BLANK;
 			execution_context->cycles_to_ppu_event += CYCLES_PER_SCANLINE * scan_lines[VERTICAL_BLANK];
 			execution_context->ppu->reg_ppustatus |= STATUS_VERTICAL_BLANK;
+			execution_context->ppu->reg_scroll_x = 0;
+			execution_context->ppu->reg_scroll_y = 0;
+			execution_context->ppu->reg_ppuctrl &= 0b11111100;
 			break;
 		default:
 			ERROR_LOG("Invalid state for ppu\n");
@@ -331,9 +366,33 @@ int destroy_ppu(PPU *ppu) {
 }
 
 
+void sync_ppu(PPU *ppu) {
+	if(ppu->state == SPRITE0_WAIT || ppu->state == SPRITE0_DONE) {
+		int x, y;
+		int cycles_consumed = 0;
+		if(ppu->state == SPRITE0_WAIT)
+			cycles_consumed = ppu->last_sprite0_cycle - ppu->execution_context->cycles_to_ppu_event;
+		else
+			cycles_consumed = (240 * CYCLES_PER_SCANLINE - ppu->execution_context->cycles_to_ppu_event);
+		coordinate_from_cycles(cycles_consumed, &x, &y);
+		if( x > 255)
+			x = 255;
+		ppu_draw_screen(ppu, ppu->plot_from_x, ppu->plot_from_y, x, y);
+		x++;
+		if(x>255){
+			x = 0;
+			y++;
+		}
+		ppu->plot_from_x = x;
+		ppu->plot_from_y = y;
+	}
+}
+
 
 void write_ppuctrl(PPU* ppu, BYTE ctrl) {
+	sync_ppu(ppu);
 	ppu->reg_ppuctrl = ctrl;
+	ppu->nametable_selection = ctrl & 0b11;
 	if((ctrl & ppu->reg_ppustatus & 0b10000000) && !ppu->execution_context->interrupts_disabled){
 		ppu->execution_context->nmi_flip_flop = 1;
 	}
@@ -368,6 +427,7 @@ BYTE read_oamdata(PPU *ppu) {
 }
 
 void write_ppuscroll(PPU *ppu, BYTE scroll) {
+	sync_ppu(ppu);
 	if(ppu->scroll_write_flag == 0) {
 		ppu->reg_scroll_x = scroll;
 		ppu->scroll_write_flag = 1;
@@ -380,12 +440,13 @@ void write_ppuscroll(PPU *ppu, BYTE scroll) {
 void write_ppuaddress(PPU *ppu, BYTE address) {
 	if(ppu->address_write_flag == 0) {
 		ppu->reg_address_upper = address;
+		ppu->nametable_selection=(address)/4;
 		ppu->address_write_flag = 1;
 	}else{
 		ppu->reg_address_lower = address;
 		ppu->address_write_flag = 0;
 	}
-
+	
 }
 
 void write_ppudata(PPU *ppu, BYTE data) {

@@ -31,6 +31,24 @@ typedef struct {
 	unsigned long long FreeSlot5;					// Offset 0x58	
 }REGISTERS;
 
+typedef enum {
+	controller_A = 0,
+	controller_B = 1,
+	controller_select = 2,
+	controller_start = 3,
+	controller_up = 4,
+	controller_down = 5,
+	controller_left = 6,
+	controller_right = 7,
+	controller_loop = 8,
+}CONTROLLER_CYCLE;
+
+typedef struct {
+	BYTE input;
+	CONTROLLER_CYCLE cycle1;
+	CONTROLLER_CYCLE cycle2;
+}CONTROLLER_STATE;
+
 typedef struct _EXECUTION_CONTEXT {
 	REGISTERS registers;						// Offset 0x00	
 	FILE_HANDLE *file_handle; 					// Offset 0x60
@@ -42,6 +60,7 @@ typedef struct _EXECUTION_CONTEXT {
 	EMULATION_VECTOR emulation_vector;
 	PPU *ppu;
 	NES_DISPLAY *nes_display;
+	CONTROLLER_STATE controller_state;
 }EXECUTION_CONTEXT;
 
 

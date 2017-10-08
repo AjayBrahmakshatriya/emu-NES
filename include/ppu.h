@@ -19,9 +19,7 @@
 
 #include <sys/time.h>
 
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-
+#include "types.h"
 
 typedef enum {
 	VERTICAL_BLANK = 0,
@@ -58,13 +56,10 @@ typedef enum {
 struct _EXECUTION_CONTEXT;
 typedef struct {
 	unsigned char *output_buffer;
-
 	BYTE reg_ppuctrl;
 	BYTE reg_ppumask;
 	BYTE reg_ppustatus;
-
 	BYTE reg_oamaddress;
-
 	BYTE reg_scroll_x;
 	BYTE reg_scroll_y;
 	BYTE scroll_write_flag;
@@ -78,10 +73,13 @@ typedef struct {
 	struct _EXECUTION_CONTEXT *execution_context;
 	PPU_STATES state;
 	int last_sprite0_cycle;
+	int plot_from_x;
+	int plot_from_y;
 	NAMETABLE_MIRRORING nametable_mirroring;
 	BYTE internal_vram_buffer;
 	unsigned long long total_frames_rendered;
 	struct timeval start_time;
+	int nametable_selection;
 }PPU;
 
 

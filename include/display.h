@@ -6,11 +6,26 @@
 #define DISPLAY_HEIGHT 240
 #define DISPLAY_WIDTH  256
 
+#include "types.h"
+
+typedef struct {
+	BYTE A;		// A
+	BYTE B;		// B
+	BYTE left;	// <
+	BYTE right;	// >
+	BYTE up;	// ^
+	BYTE down;	// v
+	BYTE select;	// space
+	BYTE start;	// enter
+} KEYPAD;
+
 
 typedef struct {
 	SDL_Window *window;
 	SDL_Surface *surface;
 	SDL_Thread *event_thread;
+	KEYPAD keypad1;
+	KEYPAD keypad2;
 }NES_DISPLAY;
 
 

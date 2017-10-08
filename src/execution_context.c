@@ -155,8 +155,43 @@ unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context
 	if(address >= 0x2000 && address < 0x2008) {
 		return ppu_read(execution_context->ppu, address);
 	}else if(address == 0x4016 || address == 0x4017) {
-		// These are IO for controller. We will ignore for now
-		return 0x40;
+		BYTE return_val;	
+		if(address == 0x4016){
+			switch(execution_context->controller_state.cycle1){
+				case controller_A:	return_val = execution_context->nes_display->keypad1.A; break;
+				case controller_B:	return_val = execution_context->nes_display->keypad1.B; break;
+				case controller_select:	return_val = execution_context->nes_display->keypad1.select; break;
+				case controller_start:	return_val = execution_context->nes_display->keypad1.start; break;
+				case controller_up:	return_val = execution_context->nes_display->keypad1.up; break;
+				case controller_down:	return_val = execution_context->nes_display->keypad1.down; break;
+				case controller_left:	return_val = execution_context->nes_display->keypad1.left; break;
+				case controller_right:	return_val = execution_context->nes_display->keypad1.right; break;
+				case controller_loop:	ERROR_LOG("Controller enetered with loop cycle\n"); break;
+			}
+			if (!(execution_context->controller_state.input & 0b1)){
+				execution_context->controller_state.cycle1++;
+				if(execution_context->controller_state.cycle1 == controller_loop)
+					execution_context->controller_state.cycle1 = controller_A;
+			}
+		}else{
+			switch(execution_context->controller_state.cycle2){
+				case controller_A:	return_val = execution_context->nes_display->keypad2.A; break;
+				case controller_B:	return_val = execution_context->nes_display->keypad2.B; break;
+				case controller_select:	return_val = execution_context->nes_display->keypad2.select; break;
+				case controller_start:	return_val = execution_context->nes_display->keypad2.start; break;
+				case controller_up:	return_val = execution_context->nes_display->keypad2.up; break;
+				case controller_down:	return_val = execution_context->nes_display->keypad2.down; break;
+				case controller_left:	return_val = execution_context->nes_display->keypad2.left; break;
+				case controller_right:	return_val = execution_context->nes_display->keypad2.right; break;
+				case controller_loop:	ERROR_LOG("Controller enetered with loop cycle\n"); break;
+			}
+			if (!(execution_context->controller_state.input & 0b1)){
+				execution_context->controller_state.cycle2++;
+				if(execution_context->controller_state.cycle2 == controller_loop)
+					execution_context->controller_state.cycle2 = controller_A;
+			}
+		}
+		return return_val;
 	}if(address >= 0x800 && address < 0x1000) {
 		return *(unsigned char*)translate_address_to_emulation_context(execution_context->file_handle, address);
 	}
@@ -171,7 +206,13 @@ void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsign
 	}else if((address >=0x4000 && address < 0x4014) || address == 0x4015){
 		// These are IO for APU. We will ignore for now
 	}else if(address == 0x4016 || address == 0x4017){
-		// These are IO for controller. We will ignore for now
+		if(address == 0x4016){
+			execution_context->controller_state.input = value;
+			if(value & 0b1){
+				execution_context->controller_state.cycle1 = controller_A;
+				execution_context->controller_state.cycle2 = controller_A;
+			}	
+		}
 	}
 	else{
 		ERROR_LOG("Invalid non ram write on address = %x\n", address);
