@@ -218,19 +218,18 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 	/* Sprites rendering */
 
 	int scanline;
-	BYTE scanline_color[256];
+	int scanline_color[256];
 	BYTE scanline_priority[256];
 	int sprite_size = (ppu->reg_ppuctrl & 0b100000)?16:8;
 	for(scanline = fromY; scanline <= toY; scanline++){
 		int x;	
 		for(x = 0; x < 256; x++)
-			scanline_color[x] = backdrop_color;
+			scanline_color[x] = -1;
 		int sprite_index;
 		for(sprite_index = 0; sprite_index < 64; sprite_index++){
 			int y = ppu->OAM[sprite_index * 4] + 1;
 			if(y >= 0xF0)
 				continue;
-			
 			BYTE byte1 = ppu->OAM[sprite_index * 4 + 1];
 			BYTE byte2 = ppu->OAM[sprite_index * 4 + 2];
 			int x = ppu->OAM[sprite_index * 4 + 3];
@@ -266,13 +265,15 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 			for(innerX = 0; innerX < 8; innerX++){
 				if(innerX + x >= 256)
 					continue;
-				if (scanline_color[innerX + x] != backdrop_color)
+				if (scanline_color[innerX + x] != -1)
 					continue;
 				int c_id;
 				if(byte2 & 0b1000000)
 					c_id = (plane1 >> (innerX) & 0b1) | ((plane2 >> (innerX) & 0b1) << 1);
 				else
 					c_id = (plane1 >> (7-innerX) & 0b1) | ((plane2 >> (7-innerX) & 0b1) << 1);
+				if (c_id == 0)
+					continue;
 				scanline_color[innerX + x] = pallete[c_id];
 				scanline_priority[innerX + x] = (byte2 >> 5) & 1;
 			}	
@@ -283,7 +284,7 @@ void ppu_draw_screen(PPU *ppu, int fromX, int fromY, int toX, int toY) {
 			if(scanline == toY && x > toX)
 				continue;
 			int tile_color = getPixel(ppu, x, scanline);
-			if(scanline_color[x] != backdrop_color && (tile_color == backdrop_color || scanline_priority[x]==0))
+			if(scanline_color[x] != -1 && (tile_color == backdrop_color || scanline_priority[x]==0))
 				setPixel(ppu, x, scanline, scanline_color[x]);
 		}
 	}
@@ -400,6 +401,9 @@ void write_ppuctrl(PPU* ppu, BYTE ctrl) {
 void write_ppumask(PPU *ppu, BYTE mask) {
 	ppu->reg_ppumask = mask;
 }
+BYTE read_ppumask(PPU *ppu) {
+	return ppu->reg_ppumask;
+}
 BYTE read_ppustatus(PPU *ppu) {
 	ppu->scroll_write_flag = 0;
 	ppu->address_write_flag = 0;
@@ -484,8 +488,9 @@ BYTE read_ppudata(PPU *ppu) {
 
 
 BYTE ppu_read(PPU *ppu, WORD address) {
-	switch(address) {
+	switch((address - 0x2000) % 8 + 0x2000) {
 		case PPUSTATUS: return read_ppustatus(ppu);
+		case PPUMASK: return read_ppumask(ppu);
 		case OAMDATA: 	return read_oamdata(ppu);
 		case PPUDATA: 	return read_ppudata(ppu);
 		default:
@@ -496,7 +501,7 @@ BYTE ppu_read(PPU *ppu, WORD address) {
 
 
 void ppu_write(PPU *ppu, WORD address, BYTE data) {
-	switch(address) {
+	switch(address==OAMDMA?OAMDMA:(address - 0x2000) % 8 + 0x2000) {
 		case PPUCTRL: 	write_ppuctrl(ppu, data); break;
 		case PPUMASK:	write_ppumask(ppu, data); break;
 		case OAMADDR:	write_oamaddress(ppu, data); break;

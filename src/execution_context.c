@@ -152,7 +152,7 @@ void print_next_address(EXECUTION_CONTEXT *execution_context, unsigned long long
 }
 unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address) {
 	
-	if(address >= 0x2000 && address < 0x2008) {
+	if(address >= 0x2000 && address < 0x4000) {
 		return ppu_read(execution_context->ppu, address);
 	}else if(address == 0x4016 || address == 0x4017) {
 		BYTE return_val;	
@@ -201,7 +201,7 @@ unsigned char read_non_ram_address_internal(EXECUTION_CONTEXT *execution_context
 	}
 }
 void write_non_ram_address_internal(EXECUTION_CONTEXT *execution_context, unsigned short address, unsigned char value) {	
-	if((address >= 0x2000 && address < 0x2008) || address == 0x4014) {
+	if((address >= 0x2000 && address < 0x4000) || address == 0x4014) {
 		ppu_write(execution_context->ppu, address, value);
 	}else if((address >=0x4000 && address < 0x4014) || address == 0x4015){
 		// These are IO for APU. We will ignore for now
