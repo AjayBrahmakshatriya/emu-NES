@@ -17,5 +17,12 @@ $(TARGET): $(OBJECTS)
 $(BUILD_PATH)/translation.o: x86_64_translations.s
 	$(CC) --target=x86_64-pc-win32 -m64 -c $< -o $@ 
 
+SYS:=$(shell $(CC) -dumpmachine)
+
 $(BUILD_PATH)/execution_context_assembly.o: execution_context_assembly.s
-	$(CC) -m64 -c $< -o $@
+ifneq (, $(findstring apple, $(SYS)))
+	$(CC) -DIS_MAC_OS -E $< -o $(BUILD_PATH)/execution_context_assembly.preprocessed.s 
+else
+	$(CC) -E $< -o $(BUILD_PATH)/execution_context_assembly.preprocessed.s 
+endif
+	$(CC) -m64 -c $(BUILD_PATH)/execution_context_assembly.preprocessed.s -o $@
