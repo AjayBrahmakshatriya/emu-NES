@@ -23,7 +23,8 @@ typedef struct {
 typedef struct {
 	SDL_Window *window;
 	SDL_Surface *surface;
-	SDL_Thread *event_thread;
+	//SDL_Thread *event_thread;
+	int (*keyboard_event)(void *);
 	KEYPAD keypad1;
 	KEYPAD keypad2;
 }NES_DISPLAY;

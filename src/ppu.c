@@ -326,6 +326,7 @@ WORD ppu_event_internal(EXECUTION_CONTEXT *execution_context, WORD next_address)
 			ppu_draw_screen(execution_context->ppu, execution_context->ppu->plot_from_x, execution_context->ppu->plot_from_y, 255, 239);
 			update_display(execution_context->nes_display, execution_context->ppu->output_buffer);
 			execution_context->ppu->total_frames_rendered ++;
+			execution_context->nes_display->keyboard_event(execution_context->nes_display);
 
 			if(execution_context->ppu->total_frames_rendered != 1){
 				struct timeval now;

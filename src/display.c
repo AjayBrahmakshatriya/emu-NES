@@ -1,10 +1,9 @@
 #include "display.h"
 
-static int event_thread(void *param) {
-	NES_DISPLAY *nes_display = (NES_DISPLAY*) param;
+static int keyboard_event(void *param) {
 	SDL_Event events;
-	
-	while(SDL_WaitEvent(&events)) {
+	NES_DISPLAY *nes_display = (NES_DISPLAY*) param;
+	while(SDL_PollEvent(&events)) {
         	if(events.type == SDL_QUIT)
             		exit(0);
 		else if(events.type == SDL_KEYDOWN) {
@@ -40,8 +39,8 @@ NES_DISPLAY* create_nes_display(void) {
 	NES_DISPLAY *nes_display = malloc(sizeof(*nes_display));
 	nes_display->window = SDL_CreateWindow("emu-NES", 100, 100, DISPLAY_WIDTH, DISPLAY_HEIGHT, SDL_WINDOW_SHOWN);
 	nes_display->surface = SDL_GetWindowSurface(nes_display->window);
-	nes_display->event_thread = SDL_CreateThread(event_thread, "EventThread", (void *)nes_display);
-
+	 //nes_display->event_thread = SDL_CreateThread(event_thread, "EventThread", (void *)nes_display);
+	nes_display->keyboard_event = keyboard_event;
 	nes_display->keypad1.A = 0;
 	nes_display->keypad1.B = 0;
 	nes_display->keypad1.left = 0;
